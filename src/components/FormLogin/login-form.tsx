@@ -9,11 +9,19 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { redirect } from "next/navigation"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  function handleRedirectHome() {
+
+  }
+
+  function handleRedirectTypeUser(){
+    redirect('/type-user')
+  }
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="bg-[#264543] border-0 text-white">
@@ -49,14 +57,14 @@ export function LoginForm({
                 <Input className="bg-white" placeholder="Digite sua senha" id="password" type="password" required />
               </div>
               <div className="flex flex-col gap-3 items-center">
-                <Button type="submit" className="w-48 bg-[#E3E3E3] text-black">
+                <Button type="submit" className="w-48 bg-[#E3E3E3] text-black cursor-pointer">
                   Login
                 </Button>
               </div>
             </div>
             <div className="mt-4 text-center text-sm">
               Ainda não se registrou?{" "}
-              <a href="#" className="underline underline-offset-4">
+              <a href="#" onClick={handleRedirectTypeUser} className="cursor-pointer underline underline-offset-4">
                 Clique aqui
               </a>
             </div>

@@ -10,7 +10,7 @@ export default function Footer() {
           <p className="text-sm font-medium">Lorem ipsum</p>
           <p className="text-sm font-medium">Lorem ipsum v1.0</p>
         </div>
-        <p className="text-sm mt-12">Copyright © 2023 Pedro Gabriel</p>
+        <p className="text-sm mt-12 mr-16">Copyright © 2023 Pedro Gabriel</p>
 
         <div className="flex  mt-8">
           <div className="flex space-x-2">

@@ -15,11 +15,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { redirect } from "next/navigation"
 
 export function TypeUserForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  function handleRedirectRegister(e: React.FormEvent){
+    e.preventDefault()
+    redirect('/register-external')
+  }
   return (
     <div className={cn("flex flex-col gap-6 ", className)} {...props}>
       <Card className="bg-[#264543] border-0 text-white">
@@ -35,10 +40,10 @@ export function TypeUserForm({
               <div className="grid gap-3">
                 <Label htmlFor="user-type">Tipo de usuário</Label>
                 <Select>
-                  <SelectTrigger id="user-type" className="w-full bg-white">
+                  <SelectTrigger id="user-type" className="w-full bg-white text-black">
                     <SelectValue placeholder="Selecione seu tipo" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent >
                     <SelectItem value="student">ALUNO</SelectItem>
                     <SelectItem value="teacher">SERVIDOR</SelectItem>
                     <SelectItem value="staff">EXTERNO</SelectItem>
@@ -47,7 +52,7 @@ export function TypeUserForm({
               </div>
               
               <div className="flex flex-col gap-3 items-center">
-                <Button type="submit" className="w-48 bg-[#00FD94] text-black">
+                <Button type="submit" onClick={handleRedirectRegister} className="w-48 cursor-pointer bg-[#00FD94] text-black">
                   Prosseguir
                 </Button>
               </div>
