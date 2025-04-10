@@ -1,6 +1,6 @@
 'use client';
 import Footer from '@/components/Footer/footer';
-import { RegisterExternalForm } from '@/components/FormRegisterExternal/register-external-form';
+import { RegisterInternalForm } from '@/components/FormRegisterInternal/register-internal-form';
 import Navbar from '@/components/NavBarPublic';
 import { Button } from '@/components/ui/button';
 import { redirect } from 'next/navigation';
@@ -27,7 +27,7 @@ export default function Home() {
 
       <div className="flex-1 flex items-center justify-center pt-20">
         <div className="w-full max-w-md px-4">
-          <RegisterExternalForm />
+          <RegisterInternalForm />
         </div>
       </div>
       <Footer />
