@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -110,6 +110,11 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+::selection {
+  background: #264543;
+  color: white;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -118,4 +123,3 @@
     @apply bg-background text-foreground;
   }
 }
-

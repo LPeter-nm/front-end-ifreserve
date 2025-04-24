@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -22,6 +22,10 @@ export function TypeUserForm({ className, ...props }: React.ComponentProps<'div'
 
     if (selectedType === 'EXTERNO') {
       redirect('/register-external');
+    } else if (selectedType === 'SERVIDOR') {
+      redirect('/register-server');
+    } else if (selectedType === 'ALUNO') {
+      redirect('/register-student');
     }
   }
   return (
@@ -44,9 +48,9 @@ export function TypeUserForm({ className, ...props }: React.ComponentProps<'div'
                     <SelectValue placeholder="Selecione seu tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALUNO">ALUNO</SelectItem>
-                    <SelectItem value="SERVIDOR">SERVIDOR</SelectItem>
-                    <SelectItem value="EXTERNO">EXTERNO</SelectItem>
+                    <SelectItem value="ALUNO">Aluno</SelectItem>
+                    <SelectItem value="SERVIDOR">Servidor</SelectItem>
+                    <SelectItem value="EXTERNO">Externo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

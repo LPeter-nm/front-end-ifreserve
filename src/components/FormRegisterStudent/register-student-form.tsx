@@ -1,5 +1,3 @@
-'use client';
-
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,14 +7,17 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { handleSubmit } from './action';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: 'O nome deve ter no mínimo 2 caracteres' }),
-  cpf: z.string().min(11, { message: 'Seu CPF deve ter no mínimo 11 caracteres' }),
-  phone: z.string().min(11, { message: 'Seu telefone deve ter no mínimo 11 caracteres' }),
-  address: z.string().min(5, { message: 'Seu endereço deve ter no mínimo 5 caracteres' }),
+  name: z.string().min(5, { message: 'O nome deve ter no mínimo 5 caracteres' }),
+  registration: z
+    .string()
+    .min(16, { message: 'A matrícula deve ter exatamente 16 caracteres' })
+    .regex(/^\d{5}TMN\.[A-Z]{3}\d{4}$/, {
+      message: 'Formato inválido. Use: 00000TMN.XXX0000 (ex: 20221TMN.ADM0034)',
+    }),
   email: z
     .string()
     .min(6, { message: 'Seu email deve ter no mínimo 6 caracteres' })
@@ -24,7 +25,7 @@ const formSchema = z.object({
   password: z.string().min(8, { message: 'Sua senha deve ter no mínimo 8 caracteres' }),
 });
 
-export function RegisterExternalForm({ className, ...props }: React.ComponentProps<'div'>) {
+export function RegisterStudentForm({ className, ...props }: React.ComponentProps<'div'>) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,9 +43,7 @@ export function RegisterExternalForm({ className, ...props }: React.ComponentPro
     try {
       const formData = new FormData();
       formData.append('name', values.name);
-      formData.append('cpf', values.cpf);
-      formData.append('phone', values.phone);
-      formData.append('address', values.address);
+      formData.append('registration', values.registration);
       formData.append('email', values.email);
       formData.append('password', values.password);
 
@@ -86,46 +85,24 @@ export function RegisterExternalForm({ className, ...props }: React.ComponentPro
                 />
                 {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
               </div>
-
               <div className="grid gap-2">
-                <Label htmlFor="cpf">CPF</Label>
+                <Label htmlFor="registration">Matrícula</Label>
                 <Input
                   className="bg-white text-black"
-                  id="cpf"
+                  id="registration"
                   type="text"
-                  placeholder="000.000.000-00"
+                  placeholder="Digite sua matrícula"
                   required
-                  {...register('cpf')}
+                  {...register('registration')}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase();
+                    e.target.value = value;
+                  }}
                 />
-                {errors.cpf && <p className="text-red-500 text-sm">{errors.cpf.message}</p>}
+                {errors.registration && (
+                  <p className="text-red-500 text-sm">{errors.registration.message}</p>
+                )}
               </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
-                  className="bg-white text-black"
-                  id="phone"
-                  type="text"
-                  placeholder="(00) 0 0000-0000"
-                  required
-                  {...register('phone')}
-                />
-                {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="address">Endereço</Label>
-                <Input
-                  className="bg-white text-black"
-                  id="address"
-                  type="text"
-                  placeholder="Rua exemplo; Bairro exemplo; n. EX"
-                  required
-                  {...register('address')}
-                />
-                {errors.address && <p className="text-red-500 text-sm">{errors.address.message}</p>}
-              </div>
-
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -133,12 +110,11 @@ export function RegisterExternalForm({ className, ...props }: React.ComponentPro
                   id="email"
                   type="email"
                   placeholder="Digite seu email"
-                  required
                   {...register('email')}
+                  required
                 />
                 {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
               </div>
-
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Senha</Label>
@@ -148,14 +124,13 @@ export function RegisterExternalForm({ className, ...props }: React.ComponentPro
                   placeholder="Digite sua senha"
                   id="password"
                   type="password"
-                  required
                   {...register('password')}
+                  required
                 />
                 {errors.password && (
                   <p className="text-red-500 text-sm">{errors.password.message}</p>
                 )}
               </div>
-
               <div className="flex flex-col gap-3 items-center">
                 <Button
                   type="submit"
