@@ -1,3 +1,4 @@
+'use client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,8 +8,9 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { handleSubmit } from './action';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   name: z.string().min(5, { message: 'O nome deve ter no mínimo 5 caracteres' }),
@@ -28,6 +30,7 @@ const formSchema = z.object({
 export function RegisterStudentForm({ className, ...props }: React.ComponentProps<'div'>) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   const {
     register,
@@ -55,7 +58,7 @@ export function RegisterStudentForm({ className, ...props }: React.ComponentProp
       } else if (result?.success) {
         toast.success(result.message);
         alert(result.message);
-        window.location.href = '/';
+        router.push('/');
       }
     } finally {
       setIsSubmitting(false);

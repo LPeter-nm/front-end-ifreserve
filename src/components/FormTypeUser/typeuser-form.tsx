@@ -1,3 +1,4 @@
+'use client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,22 +11,22 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 export function TypeUserForm({ className, ...props }: React.ComponentProps<'div'>) {
   const [selectedType, setSelectedType] = useState('');
-
+  const router = useRouter();
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     sessionStorage.setItem('user_Type', selectedType);
 
     if (selectedType === 'EXTERNO') {
-      redirect('/register-external');
+      router.push('/register-external');
     } else if (selectedType === 'SERVIDOR') {
-      redirect('/register-server');
+      router.push('/register-server');
     } else if (selectedType === 'ALUNO') {
-      redirect('/register-student');
+      router.push('/register-student');
     }
   }
   return (

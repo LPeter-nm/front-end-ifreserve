@@ -1,13 +1,62 @@
+'use client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { redirect } from 'next/navigation';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { handleSubmit } from './action';
+import { useRouter } from 'next/navigation';
+
+const formSchema = z.object({
+  code: z.string().min(4, { message: 'O código deve ter 4 caracteres' }),
+});
 
 export function CodeForm({ className, ...props }: React.ComponentProps<'div'>) {
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+
+  const {
+    register,
+    handleSubmit: formHandleSubmit,
+    formState: { errors },
+  } = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+  });
+
+  const email = localStorage.getItem('email') as string;
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
+
+    const tokenId = localStorage.getItem('tokenId') as string;
+
+    try {
+      const formData = new FormData();
+      formData.append('code', values.code);
+      formData.append('tokenId', tokenId);
+
+      const result = await handleSubmit(formData);
+
+      if (result?.error) {
+        setError(result.error);
+        toast.error(result.error);
+      } else if (result?.success) {
+        toast.success(result.message);
+        alert(result.message);
+        router.push('/new-credentials');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   function handleRedirectLogin() {
-    redirect('/');
+    router.push('/');
   }
 
   return (
@@ -16,42 +65,47 @@ export function CodeForm({ className, ...props }: React.ComponentProps<'div'>) {
       {...props}>
       <Card className="bg-[#264543] border-0 text-white">
         <CardContent>
-          <form>
+          <form onSubmit={formHandleSubmit(onSubmit)}>
             <div className="flex flex-col gap-6">
               <h1 className="flex font-bold justify-center text-xl">Recuperar senha</h1>
+              {error && (
+                <div className="mt-4 mb-4 p-3 bg-red-100 text-red-700 rounded-md">{error}</div>
+              )}
               <div className="grid gap-3">
                 <Label htmlFor="email">Email</Label>
                 <Input
-                  className="bg-white"
+                  className="bg-white text-black"
                   id="email"
                   type="email"
-                  placeholder="email digitado"
+                  value={email || ''}
                   disabled
                 />
               </div>
               <div className="grid gap-3">
                 <Label htmlFor="code">Código</Label>
                 <Input
-                  className="bg-white"
+                  className="bg-white text-black"
                   id="code"
-                  type="number"
+                  type="text"
                   placeholder="Insira o código enviado no e-mail"
                   required
+                  {...register('code')}
                 />
+                {errors.code && <p className="text-red-500 text-sm">{errors.code.message}</p>}
               </div>
 
               <div className="flex gap-5 justify-center items-center">
                 <Button
-                  type="submit"
+                  type="button"
                   onClick={handleRedirectLogin}
                   className="w-36 bg-white text-black cursor-pointer transition-colors">
                   Voltar para Login
                 </Button>
                 <Button
                   type="submit"
-                  onClick={handleRedirectLogin}
-                  className="w-36 bg-[#E3E3E3] text-black cursor-pointer transition-colors">
-                  Prosseguir
+                  className="w-36 bg-[#E3E3E3] text-black cursor-pointer transition-colors"
+                  disabled={isSubmitting}>
+                  {isSubmitting ? 'Comparando código...' : 'Prosseguir'}
                 </Button>
               </div>
             </div>

@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { handleSubmit } from './action';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter no mínimo 2 caracteres' }),
@@ -27,6 +28,7 @@ const formSchema = z.object({
 export function RegisterExternalForm({ className, ...props }: React.ComponentProps<'div'>) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   const {
     register,
@@ -56,7 +58,7 @@ export function RegisterExternalForm({ className, ...props }: React.ComponentPro
       } else if (result?.success) {
         toast.success(result.message);
         alert(result.message);
-        window.location.href = '/';
+        router.push('/');
       }
     } finally {
       setIsSubmitting(false);

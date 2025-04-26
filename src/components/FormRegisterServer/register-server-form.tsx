@@ -1,9 +1,10 @@
+'use client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useState } from 'react';
 import { z } from 'zod';
@@ -29,6 +30,7 @@ export function RegisterServerForm({ className, ...props }: React.ComponentProps
   const [selectedFunction, setSelectedFunction] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   const {
     register,
@@ -40,6 +42,7 @@ export function RegisterServerForm({ className, ...props }: React.ComponentProps
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
+
     try {
       const formData = new FormData();
       formData.append('name', values.name);
@@ -56,7 +59,7 @@ export function RegisterServerForm({ className, ...props }: React.ComponentProps
       } else if (result?.success) {
         toast.success(result.message);
         alert(result.message);
-        window.location.href = '/';
+        router.push('/');
       }
     } finally {
       setIsSubmitting(false);
