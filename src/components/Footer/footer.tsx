@@ -9,7 +9,7 @@ type FooterColorProps = {
 export default function Footer({ footer_bg_color, text_color }: FooterColorProps) {
   return (
     <footer
-      className="w-full  py-5 px-6"
+      className="w-full py-5 px-6"
       style={{ backgroundColor: footer_bg_color }}>
       <div className="container mx-auto flex flex-col md:flex-row justify-between items-start md:items-center">
         <div

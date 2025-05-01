@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 export type UserType = 'USER' | 'ADMIN' | 'GENERAL';
 
@@ -20,39 +21,41 @@ interface NavbarPrivateProps {
 }
 
 const NavbarPrivate = ({ userType }: NavbarPrivateProps) => {
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const [activeLink, setActiveLink] = useState('inicio');
+  const [activeLink, setActiveLink] = useState<string | null>(null);
 
-  const handleLinkClick = (linkName: string) => {
-    setActiveLink(linkName);
-    console.log(`Navegando para: ${linkName}`);
+  const handleLinkClick = (path: string) => {
+    setActiveLink(path);
+    router.push(path);
   };
 
   const handleLogOut = () => {
     localStorage.removeItem('token');
+    router.push('/');
     window.location.reload();
   };
 
   const NavButton = ({
     icon: Icon,
-    linkName,
+    path,
     label,
     onClick,
   }: {
     icon: React.ComponentType<{ size: number }>;
-    linkName: string;
+    path?: string;
     label: string;
     onClick?: () => void;
   }) => (
     <button
-      onClick={onClick || (() => handleLinkClick(linkName))}
+      onClick={onClick || (() => handleLinkClick(path as string))}
       className={`cursor-pointer flex items-center gap-3 w-full px-4 group
-      ${activeLink === linkName ? 'text-[#00ff9d]' : ''}`}>
+      ${activeLink === path ? 'text-[#00ff9d]' : ''}`}>
       <div
         className={`w-8 h-8 flex items-center justify-center 
         ${collapsed ? 'mx-auto' : ''} 
         ${
-          activeLink === linkName
+          activeLink === path
             ? 'bg-[#00ff9d] text-[#1e4e4e]'
             : 'group-hover:bg-[#00ff9d] group-hover:text-[#1e4e4e]'
         } rounded-md`}>
@@ -91,14 +94,14 @@ const NavbarPrivate = ({ userType }: NavbarPrivateProps) => {
         {/* Botões comuns a todos os usuários */}
         <NavButton
           icon={Home}
-          linkName="inicio"
+          path="/home"
           label="Início"
         />
 
         {userType === 'USER' && (
           <NavButton
             icon={History}
-            linkName="historico"
+            path="/history"
             label="Histórico"
           />
         )}
@@ -107,7 +110,7 @@ const NavbarPrivate = ({ userType }: NavbarPrivateProps) => {
         {(userType === 'ADMIN' || userType === 'GENERAL') && (
           <NavButton
             icon={Bookmark}
-            linkName="reservas"
+            path="/reservations"
             label="Reservas"
           />
         )}
@@ -117,17 +120,17 @@ const NavbarPrivate = ({ userType }: NavbarPrivateProps) => {
           <>
             <NavButton
               icon={User}
-              linkName="gerenciar-alunos"
+              path="/students"
               label="Alunos"
             />
             <NavButton
               icon={UserCog}
-              linkName="gerenciar-servidores"
+              path="/staff"
               label="Servidores"
             />
             <NavButton
               icon={Users}
-              linkName="gerenciar-externos"
+              path="/externals"
               label="Externos"
             />
           </>
@@ -136,7 +139,6 @@ const NavbarPrivate = ({ userType }: NavbarPrivateProps) => {
         {/* Botão de Sair (todos os usuários) */}
         <NavButton
           icon={LogOut}
-          linkName="sair"
           label="Sair"
           onClick={handleLogOut}
         />

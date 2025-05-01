@@ -26,7 +26,7 @@ export default function Home() {
       </div>
 
       <div className="flex-1 flex items-center justify-center pt-20">
-        <div className="w-full max-w-md px-4">
+        <div className="w-full max-w-md px-4 p-5">
           <RegisterExternalForm />
         </div>
       </div>

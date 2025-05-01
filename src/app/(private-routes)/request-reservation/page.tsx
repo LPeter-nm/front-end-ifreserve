@@ -1,5 +1,4 @@
 'use client';
-import CalendarHome from '@/components/Calendar/calendar';
 import Footer from '@/components/Footer/footer';
 import NavbarPrivate, { UserType } from '@/components/NavBarPrivate/navbar-private';
 import { Button } from '@/components/ui/button';
@@ -13,12 +12,11 @@ interface JwtPayload {
   role: string;
 }
 
-const HomeUser = () => {
+const RequestReserve = () => {
   const [userType, setUserType] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Verifica se estamos no cliente antes de acessar localStorage
     if (typeof window !== 'undefined') {
       try {
         const token = localStorage.getItem('token');
@@ -41,23 +39,19 @@ const HomeUser = () => {
   }, []);
 
   if (isLoading) {
-    return <div>Loading...</div>; // Ou um spinner de carregamento
+    return <div>Loading...</div>;
   }
 
   if (!userType) {
-    // Redirecionar para login ou mostrar conteúdo para usuário não autenticado
     return null;
   }
 
   return (
-    <div className="flex min-h-screen bg-[#ebe2e2]">
-      {/* Sidebar (NavbarPrivate) fixo */}
+    <div className="flex bg-[#ebe2e2] min-h-screen">
       <NavbarPrivate userType={userType} />
 
-      {/* Conteúdo principal + Footer */}
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* Conteúdo principal */}
-        <main className="p-4">
+        <main className="p-4 flex-grow">
           <div className="flex items-center gap-2 justify-end">
             <Button
               variant="ghost"
@@ -65,10 +59,10 @@ const HomeUser = () => {
               <Bell size={20} />
             </Button>
           </div>
-          <CalendarHome />
+
+          <div className="mt-4">{/* Adicione o conteúdo da sua página aqui */}</div>
         </main>
 
-        {/* Footer */}
         <Footer
           footer_bg_color="#1E3231"
           text_color="#FFFFFF"
@@ -78,4 +72,4 @@ const HomeUser = () => {
   );
 };
 
-export default HomeUser;
+export default RequestReserve;
