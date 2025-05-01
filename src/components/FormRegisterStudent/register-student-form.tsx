@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { handleSubmit } from './action';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
@@ -28,7 +28,6 @@ const formSchema = z.object({
 });
 
 export function RegisterStudentForm({ className, ...props }: React.ComponentProps<'div'>) {
-  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -53,12 +52,12 @@ export function RegisterStudentForm({ className, ...props }: React.ComponentProp
       const result = await handleSubmit(formData);
 
       if (result?.error) {
-        setError(result.error);
         toast.error(result.error);
       } else if (result?.success) {
         toast.success(result.message);
-        alert(result.message);
-        router.push('/');
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
       }
     } finally {
       setIsSubmitting(false);
@@ -72,9 +71,6 @@ export function RegisterStudentForm({ className, ...props }: React.ComponentProp
       <Card className="bg-[#264543] border-0 text-white">
         <CardContent>
           <form onSubmit={formHandleSubmit(onSubmit)}>
-            {error && (
-              <div className="mt-4 mb-4 p-3 bg-red-100 text-red-700 rounded-md">{error}</div>
-            )}
             <div className="flex flex-col gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="name">Nome</Label>

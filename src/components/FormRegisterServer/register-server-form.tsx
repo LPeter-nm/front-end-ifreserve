@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { handleSubmit } from './action';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 
 const formSchema = z.object({
   name: z.string().min(5, { message: 'O nome deve ter no mínimo 2 caracteres' }),
@@ -28,7 +28,6 @@ const formSchema = z.object({
 
 export function RegisterServerForm({ className, ...props }: React.ComponentProps<'div'>) {
   const [selectedFunction, setSelectedFunction] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -54,12 +53,12 @@ export function RegisterServerForm({ className, ...props }: React.ComponentProps
       const result = await handleSubmit(formData);
 
       if (result?.error) {
-        setError(result.error);
         toast.error(result.error);
       } else if (result?.success) {
         toast.success(result.message);
-        alert(result.message);
-        router.push('/');
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
       }
     } finally {
       setIsSubmitting(false);
@@ -73,9 +72,6 @@ export function RegisterServerForm({ className, ...props }: React.ComponentProps
       <Card className="bg-[#264543] border-0 text-white">
         <CardContent>
           <form onSubmit={formHandleSubmit(onSubmit)}>
-            {error && (
-              <div className="mt-4 mb-4 p-3 bg-red-100 text-red-700 rounded-md">{error}</div>
-            )}
             <div className="flex flex-col gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="name">Nome</Label>

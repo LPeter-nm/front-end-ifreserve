@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
@@ -21,7 +21,6 @@ const formSchema = z.object({
 });
 
 export function RestoreForm({ className, ...props }: React.ComponentProps<'div'>) {
-  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -46,12 +45,12 @@ export function RestoreForm({ className, ...props }: React.ComponentProps<'div'>
       localStorage.setItem('tokenId', result.tokenId);
 
       if (result?.error) {
-        setError(result.error);
         toast.error(result.error);
       } else if (result?.success) {
         toast.success(result.message);
-        alert(result.message);
-        router.push('/code-mail');
+        setTimeout(() => {
+          router.push('/code-mail');
+        }, 2000);
       }
     } finally {
       setIsSubmitting(false);
@@ -80,9 +79,6 @@ export function RestoreForm({ className, ...props }: React.ComponentProps<'div'>
                     <li>Após a verificação, você poderá criar uma nova senha.</li>
                   </ol>
                 </div>
-                {error && (
-                  <div className="mt-4 mb-4 p-3 bg-red-100 text-red-700 rounded-md">{error}</div>
-                )}
                 <Label htmlFor="email">Email</Label>
                 <Input
                   className="bg-white text-black"

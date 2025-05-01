@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { handleSubmit } from './action';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 const formSchema = z
@@ -23,7 +23,6 @@ const formSchema = z
   });
 
 export function NewCredentialsForm({ className, ...props }: React.ComponentProps<'div'>) {
-  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -47,12 +46,12 @@ export function NewCredentialsForm({ className, ...props }: React.ComponentProps
       const result = await handleSubmit(formData);
 
       if (result?.error) {
-        setError(result.error);
         toast.error(result.error);
       } else if (result?.success) {
         toast.success(result.message);
-        alert(result.message);
-        router.push('/');
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
       }
     } finally {
       setIsSubmitting(false);
@@ -71,9 +70,6 @@ export function NewCredentialsForm({ className, ...props }: React.ComponentProps
           <form onSubmit={formHandleSubmit(onSubmit)}>
             <div className="flex flex-col gap-6">
               <h1 className="flex font-bold justify-center text-xl">Recuperar senha</h1>
-              {error && (
-                <div className="mt-4 mb-4 p-3 bg-red-100 text-red-700 rounded-md">{error}</div>
-              )}
               <div className="grid gap-3">
                 <Label htmlFor="new-password">Nova senha</Label>
                 <Input

@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import { handleSubmit } from './action';
 import { useRouter } from 'next/navigation';
 
@@ -17,7 +17,6 @@ const formSchema = z.object({
 });
 
 export function CodeForm({ className, ...props }: React.ComponentProps<'div'>) {
-  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -43,12 +42,12 @@ export function CodeForm({ className, ...props }: React.ComponentProps<'div'>) {
       const result = await handleSubmit(formData);
 
       if (result?.error) {
-        setError(result.error);
         toast.error(result.error);
       } else if (result?.success) {
         toast.success(result.message);
-        alert(result.message);
-        router.push('/new-credentials');
+        setTimeout(() => {
+          router.push('/new-credentials');
+        }, 2000);
       }
     } finally {
       setIsSubmitting(false);
@@ -68,9 +67,7 @@ export function CodeForm({ className, ...props }: React.ComponentProps<'div'>) {
           <form onSubmit={formHandleSubmit(onSubmit)}>
             <div className="flex flex-col gap-6">
               <h1 className="flex font-bold justify-center text-xl">Recuperar senha</h1>
-              {error && (
-                <div className="mt-4 mb-4 p-3 bg-red-100 text-red-700 rounded-md">{error}</div>
-              )}
+
               <div className="grid gap-3">
                 <Label htmlFor="email">Email</Label>
                 <Input
