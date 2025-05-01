@@ -1,4 +1,5 @@
-import "./globals.css";
+import './globals.css';
+import { Toaster } from 'react-hot-toast';
 
 export default function RootLayout({
   children,
@@ -7,9 +8,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`antialiased bg-[#305F5C]`}
-      >
+      <body className={`antialiased bg-[#305F5C]`}>
+        <Toaster position="bottom-left" />
         {children}
       </body>
     </html>

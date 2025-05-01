@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: 'http://localhost:4000/', // Altere para sua URL
+  baseURL: process.env.API_URL || 'http://localhost:4000/', // Altere para sua URL
 });
 
 // app/server/api.ts
@@ -13,6 +13,9 @@ api.interceptors.response.use(
     return Promise.reject(message); // Retorna só a string
   }
 );
+// Interceptor para adicionar token JWT se existir
+
+// Interceptor para tratar erros globais
 
 export const checkSession = async () => {
   try {

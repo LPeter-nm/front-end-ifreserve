@@ -30,7 +30,10 @@ export default function Home() {
           <RegisterExternalForm />
         </div>
       </div>
-      <Footer />
+      <Footer
+        footer_bg_color="#00ff7f"
+        text_color="#000000"
+      />
     </div>
   );
 }
