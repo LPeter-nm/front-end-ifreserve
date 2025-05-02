@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { CalendarGrid } from '../CalendarGrid/calendar-grid';
 import FilterWeekMonth from '../FilterWeekorMonth/week-month-filter';
 import { Calendar } from '../ui/calendar';
+import CalendarView from '../MonthView/month-view';
 
 export default function CalendarHome() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -19,14 +20,7 @@ export default function CalendarHome() {
           filterValue={selectedView}
           onFilterChange={setSelectedView}
         />
-        {selectedView === 'week' ? (
-          <CalendarGrid currentDate={currentDate} />
-        ) : (
-          <Calendar
-            className="flex p-12  justify-center"
-            onDayClick={(e) => setDay(e.getDate())}
-          />
-        )}
+        {selectedView === 'week' ? <CalendarGrid currentDate={currentDate} /> : <CalendarView />}
       </div>
     </div>
   );

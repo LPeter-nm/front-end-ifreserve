@@ -4,9 +4,20 @@ import { LoginForm } from '@/components/FormLogin/login-form';
 import { TypeUserForm } from '@/components/FormTypeUser/typeuser-form';
 import Navbar from '@/components/NavBarPublic';
 import { Button } from '@/components/ui/button';
-import { redirect } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        router.push('/home');
+      }
+    }
+  });
   function handleRedirectTypeUser() {
     redirect('/type-user');
   }
