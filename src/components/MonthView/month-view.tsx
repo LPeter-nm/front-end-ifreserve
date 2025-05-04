@@ -7,17 +7,17 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { addDays, format, isSameDay, parseISO } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'; // Importe do seu UI framework
-import { ReserveSportProps } from '../CalendarEvent/calendar-event';
+import { Reserves } from '../Calendar/calendar';
 
 interface CalendarBaseProps {
-  events?: ReserveSportProps[];
+  events?: Reserves[];
 }
 
 export function MonthCalendarView({ events = [] }: CalendarBaseProps) {
   const [currentDate] = useState<Date>(new Date());
   const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
-  const [selectedDayEvents, setSelectedDayEvents] = useState<ReserveSportProps[]>([]);
+  const [selectedDayEvents, setSelectedDayEvents] = useState<Reserves[]>([]);
   const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
   const router = useRouter();
 
@@ -62,13 +62,13 @@ export function MonthCalendarView({ events = [] }: CalendarBaseProps) {
 
   const days = generateCalendarDays();
 
-  const getEventsForDay = (dayDate: Date): ReserveSportProps[] => {
-    return events.filter((event) => {
+  const getEventsForDay = (dayDate: Date): Reserves[] => {
+    return events.filter((reserve) => {
       // Verifica se o evento tem a data definida
-      if (!event?.event?.reserve?.date_Start) return false;
+      if (!reserve?.date_Start) return false;
 
       // Cria a data do evento no mesmo timezone do dayDate
-      const eventDate = new Date(event.event.reserve.date_Start);
+      const eventDate = new Date(reserve.date_Start);
 
       // Compara dia, mês e ano diretamente
       return (
@@ -172,16 +172,14 @@ export function MonthCalendarView({ events = [] }: CalendarBaseProps) {
                 <div className="space-y-1 mt-1">
                   {/* Mostra sempre o primeiro evento */}
                   <div
-                    key={dayEvents[0].event.id}
-                    className={`gap-1 flex flex-col justify-center items-center p-1 rounded-md text-xs ${
-                      dayEvents[0].event.color || 'bg-green-300'
-                    }`}>
-                    <div className="font-semibold truncate">{dayEvents[0].event.type_Practice}</div>
+                    key={dayEvents[0].id}
+                    className="gap-1 flex flex-col justify-center items-center p-1 rounded-md text-xs bg-green-300">
                     <div className="font-semibold truncate">
-                      {dayEvents[0].event.reserve.type_Reserve}
+                      {dayEvents[0].sport?.type_Practice}
                     </div>
+                    <div className="font-semibold truncate">{dayEvents[0].type_Reserve}</div>
                     <div className="text-xs truncate">
-                      {dayEvents[0].event.reserve.hour_Start}-{dayEvents[0].event.reserve.hour_End}
+                      {dayEvents[0].hour_Start}-{dayEvents[0].hour_End}
                     </div>
                   </div>
 
@@ -213,27 +211,23 @@ export function MonthCalendarView({ events = [] }: CalendarBaseProps) {
             <DialogTitle>Eventos do dia</DialogTitle>
           </DialogHeader>
           <div className="grid gap-2 py-4">
-            {selectedDayEvents.map((event) => (
+            {selectedDayEvents.map((reserve) => (
               <div
-                key={event.event.id}
+                key={reserve.id}
                 onClick={() => {
                   router.push(
-                    `/request-reservation?date=${event.event.reserve.date_Start}&eventId=${event.event.id}`
+                    `/request-reservation?date=${reserve.date_Start}&eventId=${reserve.id}`
                   );
                   setIsEventsModalOpen(false);
                 }}
-                className={`p-3 rounded-lg cursor-pointer hover:bg-gray-100 ${
-                  event.event.color || 'bg-green-50'
-                }`}>
-                <div className="font-bold">{event.event.reserve.type_Reserve}</div>
+                className="p-3 rounded-lg cursor-pointer hover:bg-gray-100 bg-green-300">
+                <div className="font-bold">{reserve.type_Reserve}</div>
+                <div className="text-sm text-gray-600">{reserve.date_Start.slice(0, 10)}</div>
                 <div className="text-sm text-gray-600">
-                  {event.event.reserve.date_Start.slice(0, 10)}
+                  {reserve.hour_Start} - {reserve.hour_End}
                 </div>
-                <div className="text-sm text-gray-600">
-                  {event.event.reserve.hour_Start} - {event.event.reserve.hour_End}
-                </div>
-                {event.event.type_Practice && (
-                  <div className="text-sm mt-1">{event.event.type_Practice}</div>
+                {reserve.sport?.type_Practice && (
+                  <div className="text-sm mt-1">{reserve.sport?.type_Practice}</div>
                 )}
               </div>
             ))}

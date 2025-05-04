@@ -1,9 +1,12 @@
 import { api } from '@/app/server/api';
 
-export async function getReservesAcepted() {
+export async function getReservesAcepted(): Promise<any> {
   try {
-    const response = await api.get('reserve-sport/reserves');
-
+    // Faz chamadas para todos os tipos de reserva
+    const response = await api.get('reserve/reserves');
     return response.data;
-  } catch (error: any) {}
+  } catch (error: any) {
+    console.error('Error fetching reserves:', error.message);
+    return [];
+  }
 }
