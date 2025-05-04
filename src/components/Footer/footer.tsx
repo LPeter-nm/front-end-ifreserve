@@ -15,9 +15,21 @@ export default function Footer({ footer_bg_color, text_color }: FooterColorProps
         <div
           className="border-l-2 pl-4"
           style={{ borderLeftColor: text_color, color: text_color }}>
-          <p className="text-sm font-medium">Send e-mail</p>
-          <p className="text-sm font-medium">Lorem ipsum</p>
-          <p className="text-sm font-medium">Lorem ipsum v1.0</p>
+          <Link
+            href="https://portal.ifma.edu.br/inicio/"
+            target="_blank">
+            <p className="text-sm font-medium">Portal IFMA</p>
+          </Link>
+          <Link
+            href="#"
+            target="_blank">
+            <p className="text-sm font-medium">Como funciona o site?</p>
+          </Link>
+          <Link
+            href="#"
+            target="_blank">
+            <p className="text-sm font-medium">Sobre o site</p>
+          </Link>
         </div>
         <p
           className="text-sm mt-12 mr-16"

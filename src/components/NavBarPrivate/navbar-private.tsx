@@ -110,7 +110,7 @@ const NavbarPrivate = ({ userType }: NavbarPrivateProps) => {
         {(userType === 'ADMIN' || userType === 'GENERAL') && (
           <NavButton
             icon={Bookmark}
-            path="/reservations"
+            path="/manage-reservations"
             label="Reservas"
           />
         )}

@@ -13,6 +13,14 @@ api.interceptors.response.use(
     return Promise.reject(message); // Retorna só a string
   }
 );
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 // Interceptor para adicionar token JWT se existir
 
 // Interceptor para tratar erros globais

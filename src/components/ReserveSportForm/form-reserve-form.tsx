@@ -6,13 +6,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '../ui/card';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { handleSubmit } from './action';
 import toast from 'react-hot-toast';
+import { ReserveSportProps } from '../CalendarEvent/calendar-event';
 
 const formSchema = z.object({
   number_People: z.string(),
@@ -22,6 +23,7 @@ const formSchema = z.object({
   date_End: z.string(),
   hour_Start: z.string(),
   hour_End: z.string(),
+  type_Practice: z.enum(['TREINO', 'AMISTOSO', 'RECREACAO']),
 });
 
 const ReserveSportForm = () => {
@@ -30,15 +32,25 @@ const ReserveSportForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  const { register, handleSubmit: formHandleSubmit } = useForm<z.infer<typeof formSchema>>({
+  const {
+    register,
+    handleSubmit: formHandleSubmit,
+    setValue,
+  } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
 
+  // Atualiza o form value quando selectedType muda
+  useEffect(() => {
+    setValue('type_Practice', selectedType as any);
+  }, [selectedType, setValue]);
+
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    // Cria a data no formato UTC para evitar problemas de fuso horário
+    const date = new Date(dateString + 'T00:00:00Z'); // Adiciona horário midnight UTC
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
 
@@ -96,20 +108,10 @@ const ReserveSportForm = () => {
   };
   return (
     <div className="p-5">
-      <Card className="bg-[#ebe2e2] border-1 border-black">
+      <Card className="bg-[#ebe2e2] border-1 border-black pb-0">
         <CardContent>
           <form onSubmit={formHandleSubmit(onSubmit)}>
             <div className="flex flex-col gap-4">
-              {/* Solicitante */}
-              <div className="grid gap-2">
-                <label>Solicitante</label>
-                <input
-                  id="name"
-                  type="text"
-                  className="bg-gray-200 rounded w-full px-3 py-2"
-                  disabled
-                />
-              </div>
               <div className="flex gap-50">
                 {/* Tipo de reserva - Corrigido */}
                 <div className="grid gap-2">
@@ -244,6 +246,7 @@ const ReserveSportForm = () => {
                   <input
                     id="start-time"
                     type="time"
+                    step="900"
                     className="bg-white rounded w-full px-3 py-2"
                     required
                     {...register('hour_Start')}
