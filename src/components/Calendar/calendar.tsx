@@ -25,10 +25,12 @@ export interface Reserves {
     request_Equipment: string;
   } | null;
   classroom: {
+    id: string;
     course: string;
     matter: string;
   } | null;
   event: {
+    id: string;
     name: string;
     description: string;
     location: string;
@@ -62,7 +64,7 @@ export default function CalendarHome() {
           events={reserves}
         />
       ) : (
-        <MonthCalendarView events={reserves} />
+        <MonthCalendarView initialReserves={reserves} />
       )}
     </div>
   );

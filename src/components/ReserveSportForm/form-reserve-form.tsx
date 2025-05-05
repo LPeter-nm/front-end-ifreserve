@@ -13,7 +13,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { handleSubmit } from './action';
 import toast from 'react-hot-toast';
-import { ReserveSportProps } from '../CalendarEvent/calendar-event';
 
 const formSchema = z.object({
   number_People: z.string(),

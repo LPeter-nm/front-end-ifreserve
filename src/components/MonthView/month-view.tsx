@@ -1,24 +1,28 @@
 'use client';
 
-import React from 'react';
-
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { addDays, format, isSameDay, parseISO } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'; // Importe do seu UI framework
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Reserves } from '../Calendar/calendar';
+import { CalendarEventDetails } from '../CalendarEventDetails/calendar-event-details';
+import { updateReserve } from '../CalendarEvent/action';
+import toast from 'react-hot-toast';
 
 interface CalendarBaseProps {
-  events?: Reserves[];
+  initialReserves?: Reserves[]; // Mudei para initialReserves para evitar confusão
 }
 
-export function MonthCalendarView({ events = [] }: CalendarBaseProps) {
+export function MonthCalendarView({ initialReserves = [] }: CalendarBaseProps) {
   const [currentDate] = useState<Date>(new Date());
   const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
-  const [selectedDayEvents, setSelectedDayEvents] = useState<Reserves[]>([]);
-  const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
+  const [selectedDayReserves, setSelectedDayReserves] = useState<Reserves[]>([]);
+  const [selectedReserve, setSelectedReserve] = useState<Reserves | null>(null);
+  const [isReservesModalOpen, setIsReservesModalOpen] = useState(false);
+  const [isReserveDetailsOpen, setIsReserveDetailsOpen] = useState(false);
+  const [reserves, setReserves] = useState<Reserves[]>(initialReserves); // Estado interno
   const router = useRouter();
 
   const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -62,34 +66,57 @@ export function MonthCalendarView({ events = [] }: CalendarBaseProps) {
 
   const days = generateCalendarDays();
 
-  const getEventsForDay = (dayDate: Date): Reserves[] => {
-    return events.filter((reserve) => {
-      // Verifica se o evento tem a data definida
+  const getReservesForDay = (dayDate: Date): Reserves[] => {
+    return reserves.filter((reserve) => {
       if (!reserve?.date_Start) return false;
 
-      // Cria a data do evento no mesmo timezone do dayDate
       const eventDate = new Date(reserve.date_Start);
-
-      // Compara dia, mês e ano diretamente
       return (
-        dayDate.getDate() === eventDate.getDate() + 1 &&
+        dayDate.getDate() === eventDate.getDate() &&
         dayDate.getMonth() === eventDate.getMonth() &&
         dayDate.getFullYear() === eventDate.getFullYear()
       );
     });
   };
 
-  const handleDayClick = (dayDate: Date) => {
-    const events = getEventsForDay(dayDate);
+  const handleSaveReserve = async (updatedData: any) => {
+    try {
+      const route = updatedData.sport
+        ? 'reserve-sport'
+        : updatedData.classroom
+        ? 'reserve-classroom'
+        : 'reserve-event';
 
-    if (events.length === 1) {
-      router.push(`/request-reservation`);
-    } else if (events.length > 1) {
-      setSelectedDayEvents(events);
-      setIsEventsModalOpen(true);
-    } else {
-      router.push(`/request-reservation`);
+      await updateReserve(updatedData.id, route, updatedData);
+
+      setReserves((prev) => prev.map((r) => (r.id === updatedData.id ? updatedData : r)));
+
+      toast.success('Reserva atualizada com sucesso!');
+      setIsReserveDetailsOpen(false);
+    } catch (error) {
+      toast.error('Erro ao atualizar reserva');
+      console.error(error);
     }
+  };
+
+  const handleDayClick = (dayDate: Date) => {
+    const dayReserves = getReservesForDay(dayDate);
+
+    if (dayReserves.length === 1) {
+      setSelectedReserve(dayReserves[0]);
+      setIsReserveDetailsOpen(true);
+    } else if (dayReserves.length > 1) {
+      setSelectedDayReserves(dayReserves);
+      setIsReservesModalOpen(true);
+    } else {
+      router.push('/request-reservation');
+    }
+  };
+
+  const handleReserveClick = (reserve: Reserves, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedReserve(reserve);
+    setIsReserveDetailsOpen(true);
   };
 
   const prevMonth = () => {
@@ -107,6 +134,8 @@ export function MonthCalendarView({ events = [] }: CalendarBaseProps) {
     setSelectedMonth(today.getMonth());
     setSelectedYear(today.getFullYear());
   };
+
+  const isCurrentWeek = isSameDay(currentDate, new Date());
 
   return (
     <div className="bg-[#ebe2e2] p-4 rounded-lg">
@@ -147,7 +176,7 @@ export function MonthCalendarView({ events = [] }: CalendarBaseProps) {
         ))}
 
         {days.map((dayDate, index) => {
-          const dayEvents = getEventsForDay(dayDate);
+          const dayReserves = getReservesForDay(dayDate);
           const isCurrentMonth = dayDate.getMonth() === selectedMonth;
           const isToday = isSameDay(dayDate, new Date());
 
@@ -167,32 +196,32 @@ export function MonthCalendarView({ events = [] }: CalendarBaseProps) {
                 {dayDate.getDate()}
               </div>
 
-              {/* Mostra apenas 1 evento ou o indicador */}
-              {dayEvents.length > 0 && (
+              {dayReserves.length > 0 && (
                 <div className="space-y-1 mt-1">
-                  {/* Mostra sempre o primeiro evento */}
                   <div
-                    key={dayEvents[0].id}
-                    className="gap-1 flex flex-col justify-center items-center p-1 rounded-md text-xs bg-green-300">
+                    key={dayReserves[0].id}
+                    onClick={(e) => handleReserveClick(dayReserves[0], e)}
+                    className="gap-1 flex flex-col justify-center items-center p-1 rounded-md text-xs bg-green-300 hover:bg-green-400">
                     <div className="font-semibold truncate">
-                      {dayEvents[0].sport?.type_Practice}
+                      {dayReserves[0].sport?.type_Practice ||
+                        dayReserves[0].classroom?.matter ||
+                        dayReserves[0].event?.name}
                     </div>
-                    <div className="font-semibold truncate">{dayEvents[0].type_Reserve}</div>
+                    <div className="font-semibold truncate">{dayReserves[0].type_Reserve}</div>
                     <div className="text-xs truncate">
-                      {dayEvents[0].hour_Start}-{dayEvents[0].hour_End}
+                      {dayReserves[0].hour_Start}-{dayReserves[0].hour_End}
                     </div>
                   </div>
 
-                  {/* Mostra o indicador se houver mais eventos */}
-                  {dayEvents.length > 1 && (
+                  {dayReserves.length > 1 && (
                     <div
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedDayEvents(dayEvents);
-                        setIsEventsModalOpen(true);
+                        setSelectedDayReserves(dayReserves);
+                        setIsReservesModalOpen(true);
                       }}
                       className="text-xs text-center text-blue-600 hover:text-blue-800 cursor-pointer">
-                      +{dayEvents.length - 1} mais
+                      +{dayReserves.length - 1} mais
                     </div>
                   )}
                 </div>
@@ -202,36 +231,55 @@ export function MonthCalendarView({ events = [] }: CalendarBaseProps) {
         })}
       </div>
 
-      {/* Modal de eventos (estilo dropdown) */}
+      {/* Modal de múltiplas reservas */}
       <Dialog
-        open={isEventsModalOpen}
-        onOpenChange={setIsEventsModalOpen}>
+        open={isReservesModalOpen}
+        onOpenChange={setIsReservesModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Eventos do dia</DialogTitle>
+            <DialogTitle>
+              Reservas do dia {selectedDayReserves[0]?.date_Start?.slice(0, 10)}
+            </DialogTitle>
           </DialogHeader>
           <div className="grid gap-2 py-4">
-            {selectedDayEvents.map((reserve) => (
+            {selectedDayReserves.map((reserve) => (
               <div
                 key={reserve.id}
                 onClick={() => {
-                  router.push(
-                    `/request-reservation?date=${reserve.date_Start}&eventId=${reserve.id}`
-                  );
-                  setIsEventsModalOpen(false);
+                  setSelectedReserve(reserve);
+                  setIsReservesModalOpen(false);
+                  setIsReserveDetailsOpen(true);
                 }}
                 className="p-3 rounded-lg cursor-pointer hover:bg-gray-100 bg-green-300">
                 <div className="font-bold">{reserve.type_Reserve}</div>
-                <div className="text-sm text-gray-600">{reserve.date_Start.slice(0, 10)}</div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm">
                   {reserve.hour_Start} - {reserve.hour_End}
                 </div>
                 {reserve.sport?.type_Practice && (
-                  <div className="text-sm mt-1">{reserve.sport?.type_Practice}</div>
+                  <div className="text-sm mt-1">{reserve.sport.type_Practice}</div>
                 )}
+                {reserve.classroom?.matter && (
+                  <div className="text-sm mt-1">{reserve.classroom.matter}</div>
+                )}
+                {reserve.event?.name && <div className="text-sm mt-1">{reserve.event.name}</div>}
               </div>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de detalhes da reserva */}
+      <Dialog
+        open={isReserveDetailsOpen}
+        onOpenChange={setIsReserveDetailsOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          {selectedReserve && (
+            <CalendarEventDetails
+              reserve={selectedReserve}
+              onClose={() => setIsReserveDetailsOpen(false)}
+              onSave={handleSaveReserve}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { addDays, format, startOfWeek, isSameWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarEvent } from '../CalendarEvent/calendar-event';
 import { useRouter } from 'next/navigation';
 import { Reserves } from '../Calendar/calendar';
+import { getReservesAcepted } from '../Calendar/action';
 
 interface CalendarGridProps {
   currentDate: Date;
@@ -16,9 +17,24 @@ interface CalendarGridProps {
 
 export function CalendarGrid({ currentDate, events = [], onDateChange }: CalendarGridProps) {
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
+  const [reserves, setReserves] = useState<Reserves[]>(events);
   const router = useRouter();
 
-  // Funções de navegação
+  // Load and refresh reservations
+  const fetchReserves = async () => {
+    try {
+      const data = await getReservesAcepted();
+      setReserves(data);
+    } catch (error) {
+      console.error('Error loading reservations:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchReserves();
+  }, [currentDate]);
+
+  // Navigation functions
   const goToPreviousWeek = () => {
     const newDate = addDays(currentDate, -7);
     onDateChange(newDate);
@@ -46,15 +62,16 @@ export function CalendarGrid({ currentDate, events = [], onDateChange }: Calenda
   };
 
   const getEventsForCell = (dayDate: Date, time: string) => {
-    return events.filter((reserve) => {
-      // 1. Converter a data do evento (YYYY-MM-DD) para objeto Date
+    return reserves.filter((reserve) => {
+      if (!reserve.date_Start || !reserve.date_End || !reserve.hour_Start || !reserve.hour_End)
+        return false;
+
       const [eventYear, eventMonth, eventDay] = reserve.date_Start
         .slice(0, 10)
         .split('-')
         .map(Number);
       const eventDate = new Date(eventYear, eventMonth - 1, eventDay);
 
-      // 2. Verificar se é o mesmo dia
       const isSameDay =
         dayDate.getDate() === eventDate.getDate() &&
         dayDate.getMonth() === eventDate.getMonth() &&
@@ -62,17 +79,11 @@ export function CalendarGrid({ currentDate, events = [], onDateChange }: Calenda
 
       if (!isSameDay) return false;
 
-      // 3. Verificar o horário
       const [cellHour] = time.split(':').map(Number);
       const [startHour] = reserve.hour_Start.split(':').map(Number);
       const [endHour] = reserve.hour_End.split(':').map(Number);
 
-      console.log('Todos os eventos:', events);
-      console.log('Dia sendo renderizado:', dayDate);
-      console.log('Horário sendo renderizado:', time);
-
-      // Mostrar eventos que estão em andamento neste horário
-      return isSameDay && cellHour >= startHour && cellHour < endHour;
+      return cellHour >= startHour && cellHour < endHour;
     });
   };
 
@@ -80,8 +91,8 @@ export function CalendarGrid({ currentDate, events = [], onDateChange }: Calenda
 
   return (
     <div className="flex-1 overflow-auto">
-      {/* Controles de navegação */}
-      <div className="flex justify-between items-center mb-4 p-2  rounded">
+      {/* Navigation controls */}
+      <div className="flex justify-between items-center mb-4 p-2 rounded">
         <div>
           <span className="text-lg font-semibold bg-gray-300 rounded p-2">
             {format(weekStart, 'MMMM yyyy', { locale: ptBR })}
@@ -111,7 +122,7 @@ export function CalendarGrid({ currentDate, events = [], onDateChange }: Calenda
         </div>
       </div>
 
-      {/* Grade do calendário */}
+      {/* Calendar grid */}
       <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr] min-w-full gap-2">
         {/* Header row with day names */}
         <div className="sticky top-0 z-10 bg-[#ebe2e2]">
@@ -152,6 +163,7 @@ export function CalendarGrid({ currentDate, events = [], onDateChange }: Calenda
                         key={reserve.id}
                         reserve={reserve}
                         color="bg-green-300"
+                        onUpdate={fetchReserves} // Pass refresh function
                       />
                     ))}
                   </div>

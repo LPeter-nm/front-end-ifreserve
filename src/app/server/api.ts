@@ -14,17 +14,6 @@ api.interceptors.response.use(
   }
 );
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-// Interceptor para adicionar token JWT se existir
-
-// Interceptor para tratar erros globais
-
 export const checkSession = async () => {
   try {
     const response = await api.get('user/type-user');

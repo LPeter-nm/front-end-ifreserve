@@ -46,7 +46,6 @@ export default function DashboardManageReserve() {
   const getAllReserves = async () => {
     try {
       const data = await getReserves();
-      console.log(data);
       setReserves(data);
     } catch (error) {
       console.error('Erro ao buscar reservas:', error);

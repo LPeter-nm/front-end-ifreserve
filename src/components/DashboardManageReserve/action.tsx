@@ -1,11 +1,7 @@
 import { api } from '@/app/server/api';
 export async function getReserves() {
   try {
-    const response = await api.get('reserve/reserves', {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await api.get('reserve/reserves');
 
     return response.data;
   } catch (error: any) {
