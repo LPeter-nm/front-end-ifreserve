@@ -3,29 +3,24 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Mail } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { confirmReserve, getReserves, refusedReserve } from './action';
+import { confirmReserve, getReports, getReserves, refusedReserve } from './action';
 import toast from 'react-hot-toast';
 
 interface Reserves {
   id: string;
   type_Reserve: string;
   ocurrence: string;
-  date_Start: string;
-  date_End: string;
-  hour_Start: string;
-  hour_End: string;
+  dateTimeStart: Date;
+  dateTimeEnd: Date;
   user: {
     name: string;
+    role: string;
   };
   sport: {
     id: string;
+    comments: string;
     status: string;
     type_Practice: string;
-    date_Start: string;
-    date_End: string;
-    hour_Start: string;
-    hour_End: string;
-    ocurrence: string;
   };
   classroom: {
     course: string;
@@ -38,32 +33,89 @@ interface Reserves {
   };
 }
 
+interface Reports {
+  id: string;
+  name_User: string;
+  people_Appear: string;
+  requested_Equipment: string;
+  description: string;
+  description_Court: string;
+  description_Equipment: string;
+  time_Used: string;
+  date_Used: string;
+}
+
 export default function DashboardManageReserve() {
   const [reserves, setReserves] = useState<Reserves[]>([]);
   const [selectedTab, setSelectedTab] = useState('all');
   const [selectedReserve, setSelectedReserve] = useState<Reserves | null>(null);
+  const [reports, setReports] = useState();
+  const [comment, setComment] = useState('');
 
   const getAllReserves = async () => {
     try {
-      const data = await getReserves();
+      const formData = new FormData();
+      formData.append('token', localStorage.getItem('token') as string);
+      const data = await getReserves(formData);
       setReserves(data);
-    } catch (error) {
+    } catch (error: any) {
+      toast.error(error.message);
       console.error('Erro ao buscar reservas:', error);
     }
   };
 
+  const getAllReports = async () => {
+    try {
+      const formData = new FormData();
+      formData.append('token', localStorage.getItem('token') as string);
+      const data = await getReports(formData);
+      console.log('Relatórios', reports);
+      setReports(data);
+    } catch (error: any) {
+      toast.error(error.message);
+      console.error('Error ao buscar relatórios', error);
+    }
+  };
+
   const handleConfirmReserve = async (reserveId: string) => {
-    // Implemente sua lógica de confirmação aqui
-    await confirmReserve(reserveId);
-    toast.success('Reserva Confirmada com sucesso'); // Recarrega as reservas após a ação
+    try {
+      const formData = new FormData();
+      formData.append('token', localStorage.getItem('token') as string);
+
+      const result = await confirmReserve(formData, reserveId, comment);
+
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Reserva confirmada com sucesso');
+        setComment('');
+        await getAllReserves();
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+      console.error('Erro ao confirmar reserva', error);
+    }
   };
 
   const handleRejectReserve = async (reserveId: string) => {
-    // Implemente sua lógica de recusa aqui
-    await refusedReserve(reserveId);
-    toast.success('Reserva recusada com sucesso'); // Recarrega as reservas após a ação
-  };
+    try {
+      const formData = new FormData();
+      formData.append('token', localStorage.getItem('token') as string);
 
+      const result = await refusedReserve(formData, reserveId, comment);
+
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Reserva recusada com sucesso');
+        setComment('');
+        await getAllReserves();
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+      console.error('Erro ao recusar reserva', error);
+    }
+  };
   useEffect(() => {
     getAllReserves();
   }, []);
@@ -91,6 +143,18 @@ export default function DashboardManageReserve() {
     }
   };
 
+  const formatDateTime = (dateTime: Date) => {
+    if (!dateTime) return '';
+    const date = new Date(dateTime);
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const renderReserveDetails = () => {
     if (!selectedReserve) {
       return (
@@ -108,33 +172,43 @@ export default function DashboardManageReserve() {
         <h2 className="text-xl font-bold mb-4">Detalhes da Reserva</h2>
 
         <div className="space-y-4">
-          {/* Informações comuns a todos os tipos */}
           <div>
             <h3 className="font-semibold">Informações Básicas</h3>
             <p>ID: {selectedReserve.id}</p>
             <p>Solicitante: {selectedReserve.user.name}</p>
-            <p>
-              Período: {selectedReserve.date_Start.slice(0, 10)} a{' '}
-              {selectedReserve.date_End.slice(0, 10)}
-            </p>
-            <p>
-              Horário: {selectedReserve.hour_Start} - {selectedReserve.hour_End}
-            </p>
+            <p>Início: {formatDateTime(selectedReserve.dateTimeStart)}</p>
+            <p>Término: {formatDateTime(selectedReserve.dateTimeEnd)}</p>
           </div>
 
-          {/* Detalhes específicos por tipo */}
           {selectedReserve.sport && (
             <div>
               <h3 className="font-semibold">Detalhes Esportivos</h3>
               <p>Tipo: {selectedReserve.sport.type_Practice}</p>
-              <p>Quadra: {selectedReserve.sport.ocurrence || 'Não especificado'}</p>
-
               <p>Status: {selectedReserve.sport.status}</p>
+
+              {selectedReserve.sport && (
+                <div>
+                  {selectedReserve.sport.status?.toLowerCase() === 'pendente' && (
+                    <div className="mt-4 space-y-4">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium">Comentário (opcional)</label>
+                        <textarea
+                          rows={3}
+                          className="w-full p-2 border rounded-md"
+                          placeholder="Adicione um comentário sobre a decisão..."
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {selectedReserve.sport.status?.toLowerCase() === 'pendente' && (
                 <div className="flex gap-2 mt-4">
                   <Button
-                    onClick={() => handleRejectReserve(selectedReserve.id)}
+                    onClick={() => handleRejectReserve(selectedReserve.sport.id)}
                     className="cursor-pointer bg-red-500 hover:bg-red-600">
                     Recusar
                   </Button>
@@ -231,12 +305,7 @@ export default function DashboardManageReserve() {
                     </p>
                   )}
 
-                  {(reserve.hour_Start || reserve.sport?.hour_Start) && (
-                    <p className="text-xs mt-1">
-                      {reserve.hour_Start || reserve.sport?.hour_Start} -{' '}
-                      {reserve.hour_End || reserve.sport?.hour_End}
-                    </p>
-                  )}
+                  <p className="text-xs mt-1">{formatDateTime(reserve.dateTimeStart)}</p>
                 </div>
 
                 {reserve.sport?.status && (
@@ -247,7 +316,6 @@ export default function DashboardManageReserve() {
           </div>
         </div>
 
-        {/* Área de detalhes */}
         {renderReserveDetails()}
       </div>
     </div>

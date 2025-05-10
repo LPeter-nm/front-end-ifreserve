@@ -1,18 +1,11 @@
 import { api } from '@/app/server/api';
-export async function getReserves() {
+import { headers } from 'next/headers';
+export async function getReserves(formData: FormData) {
   try {
-    const response = await api.get('reserve/reserves');
-
-    return response.data;
-  } catch (error: any) {
-    return { error: error.message };
-  }
-}
-
-export async function confirmReserve(id: string) {
-  try {
-    const response = await api.patch(`reserve-sport/${id}/confirmed`, {
+    const token = formData.get('token');
+    const response = await api.get('reserve/reserves', {
       headers: {
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
@@ -23,14 +16,56 @@ export async function confirmReserve(id: string) {
   }
 }
 
-export async function refusedReserve(id: string) {
+export async function getReports(formData: FormData) {
   try {
-    const response = await api.patch(`reserve-sport/${id}/refused`, {
+    const token = formData.get('token');
+
+    const response = await api.get('report/reports', {
       headers: {
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
 
+    return response.data;
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function confirmReserve(formData: FormData, id: string, comment?: string) {
+  try {
+    const token = formData.get('token');
+    const response = await api.patch(
+      `reserve-sport/${id}/confirmed`,
+      { comment }, // Envia o comentário no corpo da requisição
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        withCredentials: false,
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function refusedReserve(formData: FormData, id: string, comment?: string) {
+  try {
+    const token = formData.get('token');
+    const response = await api.patch(
+      `reserve-sport/${id}/refused`,
+      { comment }, // Envia o comentário no corpo da requisição
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
     return response.data;
   } catch (error: any) {
     return { error: error.message };

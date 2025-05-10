@@ -1,5 +1,4 @@
 import { api } from '@/app/server/api';
-import { Reserves } from '../Calendar/calendar';
 
 export async function updateReserve(id: string, route: string, data: any) {
   try {
@@ -11,7 +10,7 @@ export async function updateReserve(id: string, route: string, data: any) {
         'Content-Type': 'application/json',
       },
     });
-    return { success: true, data: response.data };
+    return { success: true, data: response.data.updatedReserve, message: response.data.message };
   } catch (error: any) {
     return { error: error.message || 'Erro ao atualizar reserva' };
   }
@@ -20,7 +19,9 @@ export async function updateReserve(id: string, route: string, data: any) {
 export async function getReserveDetails(id: string, route: string) {
   try {
     const response = await api.get(`${route}/${id}`);
-    return response.data;
+    return {
+      data: response.data,
+    };
   } catch (error: any) {
     return { error: error.message };
   }

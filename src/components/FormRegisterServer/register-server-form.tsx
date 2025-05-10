@@ -15,7 +15,7 @@ import { toast } from 'react-hot-toast';
 
 const formSchema = z.object({
   name: z.string().min(5, { message: 'O nome deve ter no mínimo 2 caracteres' }),
-  registration: z
+  identification: z
     .string()
     .min(6, { message: 'A mátricula deve ter no mínimo 6 caracteres' })
     .max(8, { message: 'A mátricula deve ter no máximo 8 caracteres' }),
@@ -45,8 +45,8 @@ export function RegisterServerForm({ className, ...props }: React.ComponentProps
     try {
       const formData = new FormData();
       formData.append('name', values.name);
-      formData.append('registration', values.registration);
-      formData.append('functionServer', selectedFunction);
+      formData.append('identification', values.identification);
+      formData.append('roleInInstitution', selectedFunction);
       formData.append('email', values.email);
       formData.append('password', values.password);
 
@@ -86,34 +86,36 @@ export function RegisterServerForm({ className, ...props }: React.ComponentProps
                 {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="registration">Matrícula</Label>
+                <Label htmlFor="identification">Matrícula</Label>
                 <Input
                   className="bg-white text-black"
-                  id="registration"
+                  id="identification"
                   type="text"
                   placeholder="Digite sua matrícula"
                   required
-                  {...register('registration')}
+                  {...register('identification')}
                 />
-                {errors.registration && (
-                  <p className="text-red-500 text-sm">{errors.registration.message}</p>
+                {errors.identification && (
+                  <p className="text-red-500 text-sm">{errors.identification.message}</p>
                 )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="functionServer">Função</Label>
+                <Label htmlFor="roleInInstitution">Função</Label>
                 <Select
                   value={selectedFunction}
                   onValueChange={(value) => setSelectedFunction(value)}>
                   <SelectTrigger
-                    id="functionServer"
+                    id="roleInInstitution"
                     className="w-full bg-white text-black">
                     <SelectValue placeholder="Selecione sua função que exerce no Instituto" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PROFESSOR DE EDUCAÇÃO FÍSICA">
+                    <SelectItem value="PROFESSOR_EDUCACAO_FISICA">
                       Professor de Educação Física
                     </SelectItem>
-                    <SelectItem value="PROFESSOR">Professor</SelectItem>
+                    <SelectItem value="PROFESSOR_OUTROS">Professor</SelectItem>
+                    <SelectItem value="DIRETOR">Diretor</SelectItem>
+                    <SelectItem value="COORDENADOR">Coordenador</SelectItem>
                     <SelectItem value="OUTRO">Outro</SelectItem>
                   </SelectContent>
                 </Select>

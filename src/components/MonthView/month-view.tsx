@@ -9,12 +9,14 @@ import { Reserves } from '../Calendar/calendar';
 import { CalendarEventDetails } from '../CalendarEventDetails/calendar-event-details';
 import { updateReserve } from '../CalendarEvent/action';
 import toast from 'react-hot-toast';
+import { Role } from '../NavBarPrivate/navbar-private';
 
 interface CalendarBaseProps {
-  initialReserves?: Reserves[]; // Mudei para initialReserves para evitar confusão
+  initialReserves?: Reserves[];
+  Role: Role;
 }
 
-export function MonthCalendarView({ initialReserves = [] }: CalendarBaseProps) {
+export function MonthCalendarView({ initialReserves = [], Role }: CalendarBaseProps) {
   const [currentDate] = useState<Date>(new Date());
   const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
@@ -22,7 +24,8 @@ export function MonthCalendarView({ initialReserves = [] }: CalendarBaseProps) {
   const [selectedReserve, setSelectedReserve] = useState<Reserves | null>(null);
   const [isReservesModalOpen, setIsReservesModalOpen] = useState(false);
   const [isReserveDetailsOpen, setIsReserveDetailsOpen] = useState(false);
-  const [reserves, setReserves] = useState<Reserves[]>(initialReserves); // Estado interno
+  const [reserves, setReserves] = useState<Reserves[]>(initialReserves);
+  const [isReserveTypeModalOpen, setIsReserveTypeModalOpen] = useState(false);
   const router = useRouter();
 
   const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -68,9 +71,9 @@ export function MonthCalendarView({ initialReserves = [] }: CalendarBaseProps) {
 
   const getReservesForDay = (dayDate: Date): Reserves[] => {
     return reserves.filter((reserve) => {
-      if (!reserve?.date_Start) return false;
+      if (!reserve?.dateTimeStart) return false;
 
-      const eventDate = new Date(reserve.date_Start);
+      const eventDate = new Date(reserve.dateTimeStart);
       return (
         dayDate.getDate() === eventDate.getDate() &&
         dayDate.getMonth() === eventDate.getMonth() &&
@@ -102,15 +105,23 @@ export function MonthCalendarView({ initialReserves = [] }: CalendarBaseProps) {
   const handleDayClick = (dayDate: Date) => {
     const dayReserves = getReservesForDay(dayDate);
 
-    if (dayReserves.length === 1) {
-      setSelectedReserve(dayReserves[0]);
-      setIsReserveDetailsOpen(true);
-    } else if (dayReserves.length > 1) {
-      setSelectedDayReserves(dayReserves);
-      setIsReservesModalOpen(true);
-    } else {
-      router.push('/request-reservation');
-    }
+    reserves.map((reserve) => {
+      if (dayReserves.length === 1) {
+        setSelectedReserve(dayReserves[0]);
+        setIsReserveDetailsOpen(true);
+      } else if (dayReserves.length > 1) {
+        setSelectedDayReserves(dayReserves);
+        setIsReservesModalOpen(true);
+      } else if (
+        Role === 'PE_ADMIN' ||
+        Role === 'SISTEMA_ADMIN' ||
+        (Role === 'USER' && reserve.user.typeUser === 'SERVIDOR')
+      ) {
+        setIsReserveTypeModalOpen(true);
+      } else {
+        router.push('/request-reservation');
+      }
+    });
   };
 
   const handleReserveClick = (reserve: Reserves, e: React.MouseEvent) => {
@@ -137,9 +148,14 @@ export function MonthCalendarView({ initialReserves = [] }: CalendarBaseProps) {
 
   const isCurrentWeek = isSameDay(currentDate, new Date());
 
+  const formatTime = (dateTime: Date) => {
+    if (!dateTime) return '';
+    const date = new Date(dateTime);
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <div className="bg-[#ebe2e2] p-4 rounded-lg">
-      {/* Cabeçalho */}
       <div className="flex justify-between items-center mb-4">
         <button
           onClick={prevMonth}
@@ -165,7 +181,6 @@ export function MonthCalendarView({ initialReserves = [] }: CalendarBaseProps) {
         </button>
       </div>
 
-      {/* Grade do calendário */}
       <div className="grid grid-cols-7 gap-2">
         {weekdays.map((day) => (
           <div
@@ -203,13 +218,14 @@ export function MonthCalendarView({ initialReserves = [] }: CalendarBaseProps) {
                     onClick={(e) => handleReserveClick(dayReserves[0], e)}
                     className="gap-1 flex flex-col justify-center items-center p-1 rounded-md text-xs bg-green-300 hover:bg-green-400">
                     <div className="font-semibold truncate">
-                      {dayReserves[0].sport?.type_Practice ||
+                      {dayReserves[0].sport?.typePractice ||
                         dayReserves[0].classroom?.matter ||
                         dayReserves[0].event?.name}
                     </div>
-                    <div className="font-semibold truncate">{dayReserves[0].type_Reserve}</div>
+                    <div className="font-semibold truncate">{dayReserves[0].typeReserve}</div>
                     <div className="text-xs truncate">
-                      {dayReserves[0].hour_Start}-{dayReserves[0].hour_End}
+                      {formatTime(dayReserves[0].dateTimeStart)}-
+                      {formatTime(dayReserves[0].dateTimeEnd)}
                     </div>
                   </div>
 
@@ -231,14 +247,15 @@ export function MonthCalendarView({ initialReserves = [] }: CalendarBaseProps) {
         })}
       </div>
 
-      {/* Modal de múltiplas reservas */}
       <Dialog
         open={isReservesModalOpen}
         onOpenChange={setIsReservesModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
-              Reservas do dia {selectedDayReserves[0]?.date_Start?.slice(0, 10)}
+              Reservas do dia{' '}
+              {selectedDayReserves[0] &&
+                format(new Date(selectedDayReserves[0].dateTimeStart), 'dd/MM/yyyy')}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-2 py-4">
@@ -251,12 +268,12 @@ export function MonthCalendarView({ initialReserves = [] }: CalendarBaseProps) {
                   setIsReserveDetailsOpen(true);
                 }}
                 className="p-3 rounded-lg cursor-pointer hover:bg-gray-100 bg-green-300">
-                <div className="font-bold">{reserve.type_Reserve}</div>
+                <div className="font-bold">{reserve.typeReserve}</div>
                 <div className="text-sm">
-                  {reserve.hour_Start} - {reserve.hour_End}
+                  {formatTime(reserve.dateTimeStart)} - {formatTime(reserve.dateTimeEnd)}
                 </div>
-                {reserve.sport?.type_Practice && (
-                  <div className="text-sm mt-1">{reserve.sport.type_Practice}</div>
+                {reserve.sport?.typePractice && (
+                  <div className="text-sm mt-1">{reserve.sport.typePractice}</div>
                 )}
                 {reserve.classroom?.matter && (
                   <div className="text-sm mt-1">{reserve.classroom.matter}</div>
@@ -268,7 +285,6 @@ export function MonthCalendarView({ initialReserves = [] }: CalendarBaseProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de detalhes da reserva */}
       <Dialog
         open={isReserveDetailsOpen}
         onOpenChange={setIsReserveDetailsOpen}>

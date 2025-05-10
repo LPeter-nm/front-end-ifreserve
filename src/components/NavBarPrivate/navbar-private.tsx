@@ -14,13 +14,13 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
-export type UserType = 'USER' | 'ADMIN' | 'GENERAL';
+export type Role = 'USER' | 'PE_ADMIN' | 'SISTEMA_ADMIN';
 
 interface NavbarPrivateProps {
-  userType: UserType;
+  Role: Role;
 }
 
-const NavbarPrivate = ({ userType }: NavbarPrivateProps) => {
+const NavbarPrivate = ({ Role }: NavbarPrivateProps) => {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [activeLink, setActiveLink] = useState<string | null>(null);
@@ -98,7 +98,7 @@ const NavbarPrivate = ({ userType }: NavbarPrivateProps) => {
           label="Início"
         />
 
-        {userType === 'USER' && (
+        {Role === 'USER' && (
           <NavButton
             icon={History}
             path="/history"
@@ -107,7 +107,7 @@ const NavbarPrivate = ({ userType }: NavbarPrivateProps) => {
         )}
 
         {/* Botão de Reservas (admin e general) */}
-        {(userType === 'ADMIN' || userType === 'GENERAL') && (
+        {(Role === 'PE_ADMIN' || Role === 'SISTEMA_ADMIN') && (
           <NavButton
             icon={Bookmark}
             path="/manage-reservations"
@@ -116,7 +116,7 @@ const NavbarPrivate = ({ userType }: NavbarPrivateProps) => {
         )}
 
         {/* Botões de Gerenciamento (apenas general) */}
-        {userType === 'GENERAL' && (
+        {Role === 'SISTEMA_ADMIN' && (
           <>
             <NavButton
               icon={User}

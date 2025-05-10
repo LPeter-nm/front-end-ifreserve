@@ -9,7 +9,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`antialiased bg-[#305F5C]`}>
-        <Toaster position="bottom-left" />
+        <Toaster position="bottom-center" />
         {children}
       </body>
     </html>

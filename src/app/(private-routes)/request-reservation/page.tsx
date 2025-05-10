@@ -33,6 +33,7 @@ const RequestReserve = () => {
         console.error('Error decoding token:', error);
         toast.error(error.message);
         localStorage.removeItem('token');
+        window.location.reload();
       } finally {
         setIsLoading(false);
       }

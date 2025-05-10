@@ -6,7 +6,7 @@ export async function handleSubmit(formData: FormData) {
   try {
     await api.post('student/register', {
       name: formData.get('name'),
-      registration: formData.get('registration'),
+      identification: formData.get('identification'),
       email: formData.get('email'),
       password: formData.get('password'),
     });

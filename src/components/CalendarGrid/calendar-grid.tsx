@@ -8,25 +8,29 @@ import { CalendarEvent } from '../CalendarEvent/calendar-event';
 import { useRouter } from 'next/navigation';
 import { Reserves } from '../Calendar/calendar';
 import { getReservesAcepted } from '../Calendar/action';
+import toast from 'react-hot-toast';
+import { SelectTypeReserve } from '../ModalSelectTypeReserve/select-type-reserve';
+import { Role } from '../NavBarPrivate/navbar-private';
 
 interface CalendarGridProps {
+  Role: Role;
   currentDate: Date;
   events?: Reserves[];
   onDateChange: (newDate: Date) => void;
 }
 
-export function CalendarGrid({ currentDate, events = [], onDateChange }: CalendarGridProps) {
+export function CalendarGrid({ Role, currentDate, events = [], onDateChange }: CalendarGridProps) {
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
   const [reserves, setReserves] = useState<Reserves[]>(events);
   const router = useRouter();
+  const [isReserveTypeModalOpen, setIsReserveTypeModalOpen] = useState(false);
 
-  // Load and refresh reservations
   const fetchReserves = async () => {
     try {
       const data = await getReservesAcepted();
       setReserves(data);
-    } catch (error) {
-      console.error('Error loading reservations:', error);
+    } catch (error: any) {
+      toast.error(error.message);
     }
   };
 
@@ -34,7 +38,6 @@ export function CalendarGrid({ currentDate, events = [], onDateChange }: Calenda
     fetchReserves();
   }, [currentDate]);
 
-  // Navigation functions
   const goToPreviousWeek = () => {
     const newDate = addDays(currentDate, -7);
     onDateChange(newDate);
@@ -58,32 +61,41 @@ export function CalendarGrid({ currentDate, events = [], onDateChange }: Calenda
   });
 
   const handleCellClick = (cellEvents: Reserves[]) => {
-    if (cellEvents.length === 0) router.push('/request-reservation');
+    if (cellEvents.length === 0 && Role === 'USER') {
+      router.push('/request-reservation');
+    } else if (
+      (cellEvents.length === 0 && (Role === 'PE_ADMIN' || Role === 'SISTEMA_ADMIN')) ||
+      Role === 'USER'
+    ) {
+      setIsReserveTypeModalOpen(true);
+    }
   };
 
   const getEventsForCell = (dayDate: Date, time: string) => {
     return reserves.filter((reserve) => {
-      if (!reserve.date_Start || !reserve.date_End || !reserve.hour_Start || !reserve.hour_End)
-        return false;
+      if (!reserve.dateTimeStart || !reserve.dateTimeEnd) return false;
 
-      const [eventYear, eventMonth, eventDay] = reserve.date_Start
-        .slice(0, 10)
-        .split('-')
-        .map(Number);
-      const eventDate = new Date(eventYear, eventMonth - 1, eventDay);
+      const eventDate = new Date(reserve.dateTimeStart);
+      const eventEndDate = new Date(reserve.dateTimeEnd);
 
       const isSameDay =
-        dayDate.getDate() === eventDate.getDate() &&
-        dayDate.getMonth() === eventDate.getMonth() &&
-        dayDate.getFullYear() === eventDate.getFullYear();
+        eventDate.getDate() === dayDate.getDate() &&
+        eventDate.getMonth() === dayDate.getMonth() &&
+        eventDate.getFullYear() === dayDate.getFullYear();
 
-      if (!isSameDay) return false;
+      const [hour, minute] = time.split(':').map(Number);
+      const cellStartTime = new Date(dayDate);
+      cellStartTime.setHours(hour, minute, 0, 0);
 
-      const [cellHour] = time.split(':').map(Number);
-      const [startHour] = reserve.hour_Start.split(':').map(Number);
-      const [endHour] = reserve.hour_End.split(':').map(Number);
+      const cellEndTime = new Date(dayDate);
+      cellEndTime.setHours(hour + 1, minute, 0, 0);
 
-      return cellHour >= startHour && cellHour < endHour;
+      return (
+        isSameDay &&
+        ((eventDate >= cellStartTime && eventDate < cellEndTime) ||
+          (eventEndDate > cellStartTime && eventEndDate <= cellEndTime) ||
+          (eventDate <= cellStartTime && eventEndDate >= cellEndTime))
+      );
     });
   };
 
@@ -91,7 +103,6 @@ export function CalendarGrid({ currentDate, events = [], onDateChange }: Calenda
 
   return (
     <div className="flex-1 overflow-auto">
-      {/* Navigation controls */}
       <div className="flex justify-between items-center mb-4 p-2 rounded">
         <div>
           <span className="text-lg font-semibold bg-gray-300 rounded p-2">
@@ -122,9 +133,7 @@ export function CalendarGrid({ currentDate, events = [], onDateChange }: Calenda
         </div>
       </div>
 
-      {/* Calendar grid */}
       <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr] min-w-full gap-2">
-        {/* Header row with day names */}
         <div className="sticky top-0 z-10 bg-[#ebe2e2]">
           <div className="h-12 border-b border-r flex items-center justify-center font-medium"></div>
         </div>
@@ -163,7 +172,7 @@ export function CalendarGrid({ currentDate, events = [], onDateChange }: Calenda
                         key={reserve.id}
                         reserve={reserve}
                         color="bg-green-300"
-                        onUpdate={fetchReserves} // Pass refresh function
+                        onUpdate={fetchReserves}
                       />
                     ))}
                   </div>
@@ -173,6 +182,12 @@ export function CalendarGrid({ currentDate, events = [], onDateChange }: Calenda
           </React.Fragment>
         ))}
       </div>
+
+      <SelectTypeReserve
+        open={isReserveTypeModalOpen}
+        onOpenChange={setIsReserveTypeModalOpen}
+        role={Role}
+      />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import ReserveSportForm from '@/components/ReserveSportForm/form-reserve-form';
 import { Button } from '@/components/ui/button';
 import { jwtDecode } from 'jwt-decode';
 import { Bell } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
@@ -17,6 +18,7 @@ interface JwtPayload {
 const ManageReserve = () => {
   const [userType, setUserType] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -29,11 +31,17 @@ const ManageReserve = () => {
         }
 
         const decoded = jwtDecode<JwtPayload>(token);
+        if (decoded.role === 'USER') {
+          router.push('/home');
+          toast.error('Área restrita');
+        }
+
         setUserType(decoded.role as UserType);
       } catch (error: any) {
-        console.error('Error decoding token:', error);
+        console.error('Erro detectado:', error);
         toast.error(error.message);
         localStorage.removeItem('token');
+        window.location.reload();
       } finally {
         setIsLoading(false);
       }

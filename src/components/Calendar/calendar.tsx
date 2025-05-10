@@ -5,24 +5,26 @@ import { CalendarGrid } from '../CalendarGrid/calendar-grid';
 import FilterWeekMonth from '../FilterWeekorMonth/week-month-filter';
 import { MonthCalendarView } from '../MonthView/month-view';
 import { getReservesAcepted } from './action';
+import { Role } from '../NavBarPrivate/navbar-private';
 
 export interface Reserves {
   id: string;
-  type_Reserve: string;
-  ocurrence: string;
-  date_Start: string;
-  date_End: string;
-  hour_Start: string;
-  hour_End: string;
+  typeReserve: string;
+  occurrence: string;
+  dateTimeStart: Date;
+  dateTimeEnd: Date;
+  status: string;
+  comments?: string;
   user: {
     name: string;
+    role: string;
+    typeUser: string;
   };
   sport: {
     id: string;
-    status: string;
-    type_Practice: string;
-    number_People: string;
-    request_Equipment: string;
+    typePractice: string;
+    numberParticipants: string;
+    requestEquipment: string;
   } | null;
   classroom: {
     id: string;
@@ -37,7 +39,7 @@ export interface Reserves {
   } | null;
 }
 
-export default function CalendarHome() {
+export default function CalendarHome({ Role }: { Role: Role }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedView, setSelectedView] = useState<'week' | 'month'>('week');
   const [reserves, setReserves] = useState<Reserves[]>([]);
@@ -59,12 +61,16 @@ export default function CalendarHome() {
 
       {selectedView === 'week' ? (
         <CalendarGrid
+          Role={Role}
           onDateChange={(newDate) => setCurrentDate(newDate)}
           currentDate={currentDate}
           events={reserves}
         />
       ) : (
-        <MonthCalendarView initialReserves={reserves} />
+        <MonthCalendarView
+          Role={Role}
+          initialReserves={reserves}
+        />
       )}
     </div>
   );

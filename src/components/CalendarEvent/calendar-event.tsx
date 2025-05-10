@@ -16,6 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useRouter } from 'next/navigation';
+import { jwtDecode } from 'jwt-decode';
+import { Role } from '../NavBarPrivate/navbar-private';
 
 interface ReservesProps {
   reserve: Reserves;
@@ -23,33 +26,59 @@ interface ReservesProps {
   onUpdate?: () => void;
 }
 
+interface JwtPayload {
+  id: string;
+  role: string;
+}
+
 export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [editedData, setEditedData] = useState<any>({});
+  const [isOpen, setIsOpen] = useState(false); // Controla o modal
+  const [isEditing, setIsEditing] = useState(false); // Modo edição
+  const [isLoading, setIsLoading] = useState(false); // Loading durante ações
+  const [editedData, setEditedData] = useState<any>({}); // Dados em edição
+  const [Role, setRole] = useState<Role | null>(); // Tipo de usuário
+  const router = useRouter();
+
+  const getRole = () => {
+    try {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      const decoded = jwtDecode<JwtPayload>(token);
+      setRole(decoded.role as Role);
+    } catch (error: any) {
+      console.error('Error decoding token:', error);
+      toast.error(error.message);
+      localStorage.removeItem('token');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
       initializeEditData();
+      getRole();
     }
   }, [isOpen]);
 
   const initializeEditData = () => {
     const baseData = {
-      date_Start: reserve.date_Start?.slice(0, 10) || '',
-      date_End: reserve.date_End?.slice(0, 10) || '',
-      hour_Start: reserve.hour_Start || '',
-      hour_End: reserve.hour_End || '',
-      ocurrence: reserve.ocurrence || '',
+      dateTimeStart: reserve.dateTimeStart.toLocaleString(),
+      dateTimeEnd: reserve.dateTimeEnd.toLocaleString(),
+      ocurrence: reserve.occurrence || '',
     };
 
     if (reserve.sport) {
       setEditedData({
         ...baseData,
-        type_Practice: reserve.sport.type_Practice,
-        number_People: reserve.sport.number_People || '',
-        request_Equipment: reserve.sport.request_Equipment || '',
+        typePractice: reserve.sport.typePractice,
+        numberParticipants: reserve.sport.numberParticipants || '',
+        requestEquipment: reserve.sport.requestEquipment || '',
       });
     } else if (reserve.classroom) {
       setEditedData({
@@ -81,8 +110,8 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
     try {
       const dataToSend = {
         ...editedData,
-        date_Start: editedData.date_Start + 'T00:00:00Z',
-        date_End: editedData.date_End + 'T00:00:00Z',
+        dateTimeStart: editedData.dateTimeStart,
+        dateTimeEnd: editedData.dateTimeEnd,
       };
 
       const result = await updateReserve(reserve.id, getRoute(), dataToSend);
@@ -90,7 +119,7 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success('Reserva atualizada com sucesso!');
+        toast.success(result?.message);
         setIsEditing(false);
         onUpdate?.();
       }
@@ -102,11 +131,120 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
     }
   };
 
+  const handleViewReport = () => {
+    router.push(`/report/${reserve.sport?.id}`);
+  };
+
+  const handleReportForm = () => {
+    const calculateTimeUsed = () => {
+      const start = new Date(reserve.dateTimeStart);
+      const end = new Date(reserve.dateTimeEnd);
+
+      const diffMs = end.getTime() - start.getTime();
+      const diffMins = Math.round(diffMs / 60000);
+
+      const hours = Math.floor(diffMins / 60);
+      const minutes = diffMins % 60;
+
+      return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+    };
+
+    const timeUsed = calculateTimeUsed();
+    router.push(`/report?sportId=${reserve.sport?.id}`);
+  };
+
   const renderEventTitle = () => {
-    if (reserve.sport) return reserve.sport.type_Practice.toLocaleLowerCase();
+    if (reserve.sport) return reserve.sport.typePractice.toLocaleLowerCase();
     if (reserve.classroom) return reserve.classroom.matter;
     if (reserve.event) return reserve.event.name;
-    return reserve.type_Reserve;
+    return reserve.typeReserve;
+  };
+
+  function ReportButton() {
+    return (
+      <Button
+        variant="outline"
+        onClick={handleViewReport}>
+        Visualizar Relatório
+      </Button>
+    );
+  }
+
+  function CompareHours() {
+    const hourEnd = new Date(reserve.dateTimeEnd);
+    const hourNow = new Date();
+
+    if (hourNow > hourEnd) {
+      if (Role === 'USER' && reserve.sport) {
+        return (
+          <Button
+            variant="outline"
+            className="bg-[#2C2C2C] text-white"
+            onClick={handleReportForm}>
+            Enviar Relatório
+          </Button>
+        );
+      } else if ((Role === 'PE_ADMIN' || Role === 'SISTEMA_ADMIN') && reserve.sport) {
+        return <ReportButton />;
+      }
+    } else {
+      return (
+        <Button
+          variant="default"
+          disabled>
+          {Role === 'USER' ? 'Enviar Relatório' : 'Visualizar Relatório'}
+        </Button>
+      );
+    }
+    return null;
+  }
+
+  const renderActionButtons = () => {
+    if (Role === 'PE_ADMIN' || Role === 'SISTEMA_ADMIN') {
+      return (
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setIsOpen(false)}>
+            Voltar
+          </Button>
+          <Button
+            onClick={isEditing ? handleSaveChanges : () => setIsEditing(true)}
+            disabled={isLoading}>
+            {isLoading ? 'Salvando...' : isEditing ? 'Salvar' : 'Editar'}
+          </Button>
+          {reserve.sport && <CompareHours />}
+        </div>
+      );
+    }
+
+    if (Role === 'USER' && reserve.sport) {
+      return (
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setIsOpen(false)}>
+            Voltar
+          </Button>
+          <Button
+            onClick={isEditing ? handleSaveChanges : () => setIsEditing(true)}
+            disabled={isLoading}>
+            {isLoading ? 'Salvando...' : isEditing ? 'Salvar' : 'Editar'}
+          </Button>
+          <CompareHours />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          onClick={() => setIsOpen(false)}>
+          Voltar
+        </Button>
+      </div>
+    );
   };
 
   const renderSpecificFields = () => {
@@ -117,8 +255,8 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
             <div>
               <label className="block text-sm font-medium mb-1">Tipo de prática</label>
               <Select
-                value={editedData.type_Practice}
-                onValueChange={(value) => setEditedData({ ...editedData, type_Practice: value })}
+                value={editedData.typePractice}
+                onValueChange={(value) => setEditedData({ ...editedData, typePractice: value })}
                 disabled={!isEditing}>
                 <SelectTrigger className={!isEditing ? 'bg-gray-100' : ''}>
                   <SelectValue placeholder="Selecione" />
@@ -134,8 +272,10 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
               <label className="block text-sm font-medium mb-1">Número de participantes</label>
               <Input
                 type="number"
-                value={editedData.number_People || ''}
-                onChange={(e) => setEditedData({ ...editedData, number_People: e.target.value })}
+                value={editedData.numberParticipants || ''}
+                onChange={(e) =>
+                  setEditedData({ ...editedData, numberParticipants: e.target.value })
+                }
                 disabled={!isEditing}
                 className={!isEditing ? 'bg-gray-100' : ''}
               />
@@ -144,8 +284,8 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
           <div className="mt-4">
             <label className="block text-sm font-medium mb-1">Equipamentos Solicitados</label>
             <Input
-              value={editedData.request_Equipment || ''}
-              onChange={(e) => setEditedData({ ...editedData, request_Equipment: e.target.value })}
+              value={editedData.requestEquipment || ''}
+              onChange={(e) => setEditedData({ ...editedData, requestEquipment: e.target.value })}
               disabled={!isEditing}
               className={!isEditing ? 'bg-gray-100' : ''}
             />
@@ -218,65 +358,62 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
     return null;
   };
 
-  const renderCommonFields = () => (
-    <div className="grid grid-cols-2 gap-4 mt-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Data de início</label>
-        <Input
-          type="date"
-          value={editedData.date_Start}
-          onChange={(e) => setEditedData({ ...editedData, date_Start: e.target.value })}
-          disabled={!isEditing}
-          className={!isEditing ? 'bg-gray-100' : ''}
-        />
+  const renderCommonFields = () => {
+    const formatDateTime = (dateTime: Date) => {
+      if (!dateTime) return '';
+      const date = new Date(dateTime);
+
+      // Ajusta para o fuso horário local
+      const offset = date.getTimezoneOffset() * 60000; // offset em milissegundos
+      const localDate = new Date(date.getTime() - offset);
+
+      return localDate.toISOString().slice(0, 16);
+    };
+
+    return (
+      <div className="grid grid-cols-2 gap-4 mt-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Data e Hora de início</label>
+          <Input
+            type="datetime-local"
+            value={formatDateTime(editedData.dateTimeStart)}
+            onChange={(e) =>
+              setEditedData({ ...editedData, dateTimeStart: new Date(e.target.value) })
+            }
+            disabled={!isEditing}
+            className={!isEditing ? 'bg-gray-100' : ''}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Data e Hora de fim</label>
+          <Input
+            type="datetime-local"
+            value={formatDateTime(editedData.dateTimeEnd)}
+            onChange={(e) =>
+              setEditedData({ ...editedData, dateTimeEnd: new Date(e.target.value) })
+            }
+            disabled={!isEditing}
+            className={!isEditing ? 'bg-gray-100' : ''}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Ocorrência</label>
+          <Select
+            value={editedData.occurrence}
+            onValueChange={(value) => setEditedData({ ...editedData, occurrence: value })}
+            disabled={!isEditing}>
+            <SelectTrigger className={!isEditing ? 'bg-gray-100' : ''}>
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="SEMANALMENTE">Semanalmente</SelectItem>
+              <SelectItem value="EVENTO_UNICO">Evento único</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Data de fim</label>
-        <Input
-          type="date"
-          value={editedData.date_End}
-          onChange={(e) => setEditedData({ ...editedData, date_End: e.target.value })}
-          disabled={!isEditing}
-          className={!isEditing ? 'bg-gray-100' : ''}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Hora de início</label>
-        <Input
-          type="time"
-          value={editedData.hour_Start}
-          onChange={(e) => setEditedData({ ...editedData, hour_Start: e.target.value })}
-          disabled={!isEditing}
-          className={!isEditing ? 'bg-gray-100' : ''}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Hora de fim</label>
-        <Input
-          type="time"
-          value={editedData.hour_End}
-          onChange={(e) => setEditedData({ ...editedData, hour_End: e.target.value })}
-          disabled={!isEditing}
-          className={!isEditing ? 'bg-gray-100' : ''}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Ocorrência</label>
-        <Select
-          value={editedData.ocurrence}
-          onValueChange={(value) => setEditedData({ ...editedData, ocurrence: value })}
-          disabled={!isEditing}>
-          <SelectTrigger className={!isEditing ? 'bg-gray-100' : ''}>
-            <SelectValue placeholder="Selecione" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="SEMANALMENTE">Semanalmente</SelectItem>
-            <SelectItem value="EVENTO_UNICO">Evento único</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="grid h-16">
@@ -286,7 +423,7 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
           setIsOpen(true);
         }}
         className={`flex flex-col justify-center items-center ${color} p-1 h-full rounded text-sm overflow-hidden text-center`}>
-        <div className="font-bold">{reserve.type_Reserve}</div>
+        <div className="font-bold">{reserve.typeReserve}</div>
         <div className="font-medium">{renderEventTitle()}</div>
       </div>
 
@@ -318,7 +455,7 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
               <div>
                 <label className="block text-sm font-medium mb-1">Tipo</label>
                 <Input
-                  value={reserve.type_Reserve}
+                  value={reserve.typeReserve}
                   disabled
                   className="bg-gray-100"
                 />
@@ -327,18 +464,8 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
 
             {renderSpecificFields()}
             {renderCommonFields()}
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsOpen(false)}>
-                Voltar
-              </Button>
-              <Button
-                onClick={isEditing ? handleSaveChanges : () => setIsEditing(true)}
-                disabled={isLoading}>
-                {isLoading ? 'Salvando...' : isEditing ? 'Salvar' : 'Editar'}
-              </Button>
-            </div>
+
+            {renderActionButtons()}
           </div>
         </DialogContent>
       </Dialog>

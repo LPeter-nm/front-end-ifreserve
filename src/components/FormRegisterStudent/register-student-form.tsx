@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   name: z.string().min(5, { message: 'O nome deve ter no mínimo 5 caracteres' }),
-  registration: z
+  identification: z
     .string()
     .min(16, { message: 'A matrícula deve ter exatamente 16 caracteres' })
     .regex(/^\d{5}TMN\.[A-Z]{3}\d{4}$/, {
@@ -45,7 +45,7 @@ export function RegisterStudentForm({ className, ...props }: React.ComponentProp
     try {
       const formData = new FormData();
       formData.append('name', values.name);
-      formData.append('registration', values.registration);
+      formData.append('identification', values.identification);
       formData.append('email', values.email);
       formData.append('password', values.password);
 
@@ -85,21 +85,21 @@ export function RegisterStudentForm({ className, ...props }: React.ComponentProp
                 {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="registration">Matrícula</Label>
+                <Label htmlFor="identification">Matrícula</Label>
                 <Input
                   className="bg-white text-black"
-                  id="registration"
+                  id="identification"
                   type="text"
                   placeholder="Digite sua matrícula"
                   required
-                  {...register('registration')}
+                  {...register('identification')}
                   onChange={(e) => {
                     const value = e.target.value.toUpperCase();
                     e.target.value = value;
                   }}
                 />
-                {errors.registration && (
-                  <p className="text-red-500 text-sm">{errors.registration.message}</p>
+                {errors.identification && (
+                  <p className="text-red-500 text-sm">{errors.identification.message}</p>
                 )}
               </div>
               <div className="grid gap-2">

@@ -15,17 +15,30 @@ import { handleSubmit } from './action';
 import toast from 'react-hot-toast';
 
 const formSchema = z.object({
-  number_People: z.string(),
+  //Sport
+  numberParticipants: z.string(),
   participants: z.string(),
-  request_Equipment: z.string(),
-  date_Start: z.string(),
-  date_End: z.string(),
-  hour_Start: z.string(),
-  hour_End: z.string(),
-  type_Practice: z.enum(['TREINO', 'AMISTOSO', 'RECREACAO']),
+  requestEquipment: z.string(),
+  dateTimeStart: z.string().refine((val) => !isNaN(new Date(val).getTime()), {
+    message: 'Data/hora inicial inválida',
+  }),
+  dateTimeEnd: z.string().refine((val) => !isNaN(new Date(val).getTime()), {
+    message: 'Data/hora final inválida',
+  }),
+  occurrence: z.enum(['SEMANALMENTE', 'EVENTO_UNICO']),
+  typePractice: z.enum(['TREINO', 'AMISTOSO', 'RECREACAO']),
+
+  // Classroom
+  course: z.string(),
+  matter: z.string(),
+
+  // Event
+  name: z.string(),
+  description: z.string(),
+  location: z.string(),
 });
 
-const ReserveSportForm = () => {
+export const ReserveSportForm = () => {
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedOccurrence, setSelectedOccurrence] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,18 +54,21 @@ const ReserveSportForm = () => {
 
   // Atualiza o form value quando selectedType muda
   useEffect(() => {
-    setValue('type_Practice', selectedType as any);
+    setValue('occurrence', selectedOccurrence as any);
+    setValue('typePractice', selectedType as any);
   }, [selectedType, setValue]);
 
-  const formatDate = (dateString: string) => {
-    // Cria a data no formato UTC para evitar problemas de fuso horário
-    const date = new Date(dateString + 'T00:00:00Z'); // Adiciona horário midnight UTC
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const formatToDDMMYYYYHHMM = (dateString: string) => {
+    const date = new Date(dateString);
 
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString().slice(-2);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+
+    return `${day}/${month}/${year}, ${hours}:${minutes}`;
+  };
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
 
@@ -67,20 +83,20 @@ const ReserveSportForm = () => {
         setIsSubmitting(false);
         return;
       }
+      const formattedStart = formatToDDMMYYYYHHMM(values.dateTimeStart);
+      const formattedEnd = formatToDDMMYYYYHHMM(values.dateTimeEnd);
+
       const formData = new FormData();
       formData.append('token', token as string);
       formData.append('type_Practice', selectedType);
-      formData.append('number_People', values.number_People.toString()); // Adicionado
+      formData.append('number_People', values.numberParticipants.toString()); // Adicionado
       formData.append('participants', values.participants);
-      formData.append('request_Equipment', values.request_Equipment);
-      formData.append('ocurrence', selectedOccurrence); // Corrigido o nome do campo
+      formData.append('request_Equipment', values.requestEquipment);
+      formData.append('occurrence', selectedOccurrence); // Corrigido o nome do campo
 
       // Formatando as datas antes de enviar
-      formData.append('date_Start', formatDate(values.date_Start));
-      formData.append('date_End', formatDate(values.date_End));
-
-      formData.append('hour_Start', values.hour_Start);
-      formData.append('hour_End', values.hour_End);
+      formData.append('dateTimeStart', formattedStart);
+      formData.append('dateTimeEnd', formattedEnd);
 
       console.log('Dados sendo enviados:', Object.fromEntries(formData.entries())); // Para debug
 
@@ -154,7 +170,7 @@ const ReserveSportForm = () => {
                     className="bg-white rounded w-44 px-3 py-2"
                     min="1"
                     required
-                    {...register('number_People')}
+                    {...register('numberParticipants')}
                   />
                 </div>
               </div>
@@ -169,7 +185,7 @@ const ReserveSportForm = () => {
                       type="text"
                       className="bg-white rounded w-96  h-10 px-3 py-2"
                       placeholder="Bola de vôlei"
-                      {...register('request_Equipment')}
+                      {...register('requestEquipment')}
                     />
                   </div>
                   {/* Ocorrência - Corrigido */}
@@ -214,53 +230,28 @@ const ReserveSportForm = () => {
               </div>
 
               {/* Datas e Horas */}
-              <div className="grid grid-cols-4 gap-4">
+              <div className="flex gap-50">
                 {/* Data inicial */}
-                <div className="grid gap-2">
-                  <label htmlFor="start-date">Data inicial</label>
+                <div className="flex flex-col w-96 gap-2">
+                  <label htmlFor="dateTimeStart">Data e Hora inicial</label>
                   <input
-                    id="start-date"
-                    type="date"
+                    id="dateTimeStart"
+                    type="datetime-local"
                     className="bg-white rounded w-full px-3 py-2"
                     required
-                    {...register('date_Start')}
+                    {...register('dateTimeStart')}
                   />
                 </div>
 
                 {/* Data final */}
-                <div className="grid gap-2">
-                  <label htmlFor="end-date">Data final</label>
+                <div className="flex flex-col w-96 gap-2">
+                  <label htmlFor="dateTimeEnd">Data final</label>
                   <input
-                    id="end-date"
-                    type="date"
+                    id="dateTimeEnd"
+                    type="datetime-local"
                     className="bg-white rounded w-full px-3 py-2"
                     required
-                    {...register('date_End')}
-                  />
-                </div>
-
-                {/* Hora inicial */}
-                <div className="grid gap-2">
-                  <label htmlFor="start-time">Hora inicial</label>
-                  <input
-                    id="start-time"
-                    type="time"
-                    step="900"
-                    className="bg-white rounded w-full px-3 py-2"
-                    required
-                    {...register('hour_Start')}
-                  />
-                </div>
-
-                {/* Hora final */}
-                <div className="grid gap-2">
-                  <label htmlFor="end-time">Hora final</label>
-                  <input
-                    id="end-time"
-                    type="time"
-                    className="bg-white rounded w-full px-3 py-2"
-                    required
-                    {...register('hour_End')}
+                    {...register('dateTimeEnd')}
                   />
                 </div>
               </div>

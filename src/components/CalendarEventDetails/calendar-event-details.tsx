@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -13,11 +13,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Reserves } from '../Calendar/calendar';
+import { jwtDecode } from 'jwt-decode';
+import { useRouter } from 'next/navigation';
+import { Role } from '../NavBarPrivate/navbar-private';
 
 interface CalendarEventDetailsProps {
   reserve: Reserves;
   onClose: () => void;
   onSave: (updatedData: any) => Promise<void>;
+}
+
+interface JwtPayload {
+  id: string;
+  role: string;
 }
 
 export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEventDetailsProps) {
@@ -28,6 +36,21 @@ export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEvent
     ...(reserve.classroom || {}),
     ...(reserve.event || {}),
   });
+  const [userRole, setUserRole] = useState<Role | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode<JwtPayload>(token);
+        setUserRole(decoded.role as Role);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        localStorage.removeItem('token');
+      }
+    }
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setEditedData((prev) => ({
@@ -41,9 +64,108 @@ export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEvent
     setIsEditing(false);
   };
 
-  // Estilo personalizado para inputs desabilitados
+  const handleSubmitReport = () => {
+    const calculateTimeUsed = () => {
+      const start = new Date(reserve.dateTimeStart);
+      const end = new Date(reserve.dateTimeEnd);
+
+      const diffMs = end.getTime() - start.getTime();
+      const diffMins = Math.round(diffMs / 60000);
+
+      const hours = Math.floor(diffMins / 60);
+      const minutes = diffMins % 60;
+
+      return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+    };
+
+    const timeUsed = calculateTimeUsed();
+    router.push(`/report?sportId=${reserve.sport?.id}`);
+  };
+
+  const handleViewReport = () => {
+    router.push(`/view-report/${reserve.sport?.id}`);
+  };
+
+  function CompareHours() {
+    const hourEnd = new Date(reserve.dateTimeEnd);
+    const hourNow = new Date();
+
+    if (hourNow > hourEnd) {
+      if (userRole === 'USER' && reserve.sport) {
+        return (
+          <Button
+            variant="outline"
+            className="bg-[#2C2C2C] text-white"
+            onClick={handleSubmitReport}>
+            Enviar Relatório
+          </Button>
+        );
+      } else if ((userRole === 'PE_ADMIN' || userRole === 'SISTEMA_ADMIN') && reserve.sport) {
+        return (
+          <Button
+            variant="outline"
+            className="bg-[#2C2C2C] text-white"
+            onClick={handleViewReport}>
+            Visualizar Relatório
+          </Button>
+        );
+      }
+    } else {
+      return (
+        <Button
+          variant="default"
+          disabled>
+          {userRole === 'USER' ? 'Enviar Relatório' : 'Visualizar Relatório'}
+        </Button>
+      );
+    }
+    return null;
+  }
+
+  const renderActionButtons = () => {
+    if (isEditing) {
+      return (
+        <>
+          <Button
+            variant="outline"
+            onClick={() => setIsEditing(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave}>Salvar</Button>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <Button
+            variant="outline"
+            onClick={onClose}>
+            Fechar
+          </Button>
+          {(userRole === 'PE_ADMIN' || userRole === 'SISTEMA_ADMIN') && (
+            <Button onClick={() => setIsEditing(true)}>Editar</Button>
+          )}
+          {userRole === 'USER' && reserve.sport && (
+            <Button onClick={() => setIsEditing(true)}>Editar</Button>
+          )}
+        </>
+      );
+    }
+  };
+
   const disabledInputClass =
     'disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed';
+
+  const formatDateTime = (dateTime: Date) => {
+    if (!dateTime) return '';
+    const date = new Date(dateTime);
+
+    // Ajusta para o fuso horário local
+    const offset = date.getTimezoneOffset() * 60000; // offset em milissegundos
+    const localDate = new Date(date.getTime() - offset);
+
+    return localDate.toISOString().slice(0, 16);
+  };
 
   const renderSportFields = () => (
     <>
@@ -51,8 +173,8 @@ export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEvent
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Prática</label>
           <Select
-            value={editedData.type_Practice}
-            onValueChange={(value) => handleInputChange('type_Practice', value)}
+            value={editedData.typePractice}
+            onValueChange={(value) => handleInputChange('typePractice', value)}
             disabled={!isEditing}>
             <SelectTrigger className={disabledInputClass}>
               <SelectValue placeholder="Selecione" />
@@ -70,8 +192,8 @@ export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEvent
           </label>
           <Input
             type="number"
-            value={editedData.number_People || ''}
-            onChange={(e) => handleInputChange('number_People', e.target.value)}
+            value={editedData.numberParticipants || ''}
+            onChange={(e) => handleInputChange('numberParticipants', e.target.value)}
             disabled={!isEditing}
             className={disabledInputClass}
           />
@@ -82,8 +204,8 @@ export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEvent
           Equipamentos Solicitados
         </label>
         <Input
-          value={editedData.request_Equipment || ''}
-          onChange={(e) => handleInputChange('request_Equipment', e.target.value)}
+          value={editedData.requestEquipment || ''}
+          onChange={(e) => handleInputChange('requestEquipment', e.target.value)}
           disabled={!isEditing}
           className={disabledInputClass}
         />
@@ -149,40 +271,32 @@ export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEvent
   const renderCommonFields = () => (
     <div className="grid grid-cols-2 gap-4 mt-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Data e Hora de início
+        </label>
         <Input
-          type="date"
-          value={editedData.date_Start?.slice(0, 10) || ''}
-          onChange={(e) => handleInputChange('date_Start', e.target.value)}
+          type="datetime-local"
+          value={formatDateTime(editedData.dateTimeStart)}
+          onChange={(e) => handleInputChange('dateTimeStart', e.target.value)}
           disabled={!isEditing}
           className={disabledInputClass}
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Horário</label>
-        <div className="flex gap-2">
-          <Input
-            type="time"
-            value={editedData.hour_Start || ''}
-            onChange={(e) => handleInputChange('hour_Start', e.target.value)}
-            disabled={!isEditing}
-            className={disabledInputClass}
-          />
-          <span className="self-center text-gray-500">às</span>
-          <Input
-            type="time"
-            value={editedData.hour_End || ''}
-            onChange={(e) => handleInputChange('hour_End', e.target.value)}
-            disabled={!isEditing}
-            className={disabledInputClass}
-          />
-        </div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Data e Hora de fim</label>
+        <Input
+          type="datetime-local"
+          value={formatDateTime(editedData.dateTimeEnd)}
+          onChange={(e) => handleInputChange('dateTimeEnd', e.target.value)}
+          disabled={!isEditing}
+          className={disabledInputClass}
+        />
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Ocorrência</label>
         <Select
-          value={editedData.ocurrence}
-          onValueChange={(value) => handleInputChange('ocurrence', value)}
+          value={editedData.occurrence}
+          onValueChange={(value) => handleInputChange('occurrence', value)}
           disabled={!isEditing}>
           <SelectTrigger className={disabledInputClass}>
             <SelectValue placeholder="Selecione" />
@@ -208,25 +322,8 @@ export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEvent
       {renderCommonFields()}
 
       <div className="flex justify-end gap-2 mt-6">
-        {isEditing ? (
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditing(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave}>Salvar</Button>
-          </>
-        ) : (
-          <>
-            <Button
-              variant="outline"
-              onClick={onClose}>
-              Fechar
-            </Button>
-            <Button onClick={() => setIsEditing(true)}>Editar</Button>
-          </>
-        )}
+        {renderActionButtons()}
+        {reserve.sport && <CompareHours />}
       </div>
     </>
   );
