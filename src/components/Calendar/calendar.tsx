@@ -9,7 +9,7 @@ import { Role } from '../NavBarPrivate/navbar-private';
 
 export interface Reserves {
   id: string;
-  typeReserve: string;
+  type_Reserve: string;
   occurrence: string;
   dateTimeStart: Date;
   dateTimeEnd: Date;

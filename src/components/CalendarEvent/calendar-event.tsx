@@ -105,13 +105,25 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
     return 'reserves';
   };
 
+  const formatToDDMMYYYYHHMM = (dateString: string) => {
+    const date = new Date(dateString);
+
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+
+    return `${day}/${month}/${year}, ${hours}:${minutes}`;
+  };
+
   const handleSaveChanges = async () => {
     setIsLoading(true);
     try {
       const dataToSend = {
         ...editedData,
-        dateTimeStart: editedData.dateTimeStart,
-        dateTimeEnd: editedData.dateTimeEnd,
+        dateTimeStart: formatToDDMMYYYYHHMM(editedData.dateTimeStart),
+        dateTimeEnd: formatToDDMMYYYYHHMM(editedData.dateTimeEnd),
       };
 
       const result = await updateReserve(reserve.id, getRoute(), dataToSend);
@@ -157,7 +169,7 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
     if (reserve.sport) return reserve.sport.typePractice.toLocaleLowerCase();
     if (reserve.classroom) return reserve.classroom.matter;
     if (reserve.event) return reserve.event.name;
-    return reserve.typeReserve;
+    return reserve.type_Reserve;
   };
 
   function ReportButton() {
@@ -423,7 +435,7 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
           setIsOpen(true);
         }}
         className={`flex flex-col justify-center items-center ${color} p-1 h-full rounded text-sm overflow-hidden text-center`}>
-        <div className="font-bold">{reserve.typeReserve}</div>
+        <div className="font-bold">{reserve.type_Reserve}</div>
         <div className="font-medium">{renderEventTitle()}</div>
       </div>
 
@@ -455,7 +467,7 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
               <div>
                 <label className="block text-sm font-medium mb-1">Tipo</label>
                 <Input
-                  value={reserve.typeReserve}
+                  value={reserve.type_Reserve}
                   disabled
                   className="bg-gray-100"
                 />

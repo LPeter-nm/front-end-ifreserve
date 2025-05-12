@@ -9,7 +9,7 @@ export async function handleSubmit(formData: FormData) {
       numberParticipants: Number(formData.get('numberParticipants')),
       requestEquipment: formData.get('requestEquipment'),
       participants: formData.get('participants'),
-      occurrence: formData.get('ocurrence'),
+      occurrence: formData.get('occurrence'),
       dateTimeStart: formData.get('dateTimeStart'),
       dateTimeEnd: formData.get('dateTimeEnd'),
     }; // Para debug

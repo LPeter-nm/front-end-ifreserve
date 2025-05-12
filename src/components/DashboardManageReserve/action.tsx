@@ -37,7 +37,7 @@ export async function confirmReserve(formData: FormData, id: string, comment?: s
   try {
     const token = formData.get('token');
     const response = await api.patch(
-      `reserve-sport/${id}/confirmed`,
+      `reserve/${id}/confirmed`,
       { comment }, // Envia o comentário no corpo da requisição
       {
         headers: {
@@ -57,7 +57,7 @@ export async function refusedReserve(formData: FormData, id: string, comment?: s
   try {
     const token = formData.get('token');
     const response = await api.patch(
-      `reserve-sport/${id}/refused`,
+      `reserve/${id}/refused`,
       { comment }, // Envia o comentário no corpo da requisição
       {
         headers: {

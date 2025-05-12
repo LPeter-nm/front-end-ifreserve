@@ -145,9 +145,6 @@ export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEvent
           {(userRole === 'PE_ADMIN' || userRole === 'SISTEMA_ADMIN') && (
             <Button onClick={() => setIsEditing(true)}>Editar</Button>
           )}
-          {userRole === 'USER' && reserve.sport && (
-            <Button onClick={() => setIsEditing(true)}>Editar</Button>
-          )}
         </>
       );
     }

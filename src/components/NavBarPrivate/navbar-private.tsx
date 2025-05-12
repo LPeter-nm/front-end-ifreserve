@@ -67,7 +67,7 @@ const NavbarPrivate = ({ Role }: NavbarPrivateProps) => {
 
   return (
     <div
-      className={`${collapsed ? 'w-20' : 'w-48'} 
+      className={`${collapsed ? 'w-20' : 'w-56'} 
       bg-[#1E3231] flex flex-col items-center py-4 min-h-screen 
       transition-all duration-300 ease-in-out relative`}>
       {/* Logo */}
@@ -101,8 +101,8 @@ const NavbarPrivate = ({ Role }: NavbarPrivateProps) => {
         {Role === 'USER' && (
           <NavButton
             icon={History}
-            path="/history"
-            label="Histórico"
+            path="/view-reserves"
+            label="Reservas"
           />
         )}
 
@@ -111,7 +111,7 @@ const NavbarPrivate = ({ Role }: NavbarPrivateProps) => {
           <NavButton
             icon={Bookmark}
             path="/manage-reservations"
-            label="Reservas"
+            label="Gerenciamento de reservas"
           />
         )}
 

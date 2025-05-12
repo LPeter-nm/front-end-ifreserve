@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ClassroomReserveModal } from '../ModalReserveClassroom/classroom-reserve-modal';
 import { EventReserveModal } from '../ModalReserveEvent/event-reserve-modal';
+import { Reserves } from '../Calendar/calendar';
 
 interface SelectTypeReserveProps {
   open: boolean;

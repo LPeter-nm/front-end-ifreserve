@@ -19,28 +19,13 @@ const formSchema = z.object({
   numberParticipants: z.string(),
   participants: z.string(),
   requestEquipment: z.string(),
-  dateTimeStart: z.string().refine((val) => !isNaN(new Date(val).getTime()), {
-    message: 'Data/hora inicial inválida',
-  }),
-  dateTimeEnd: z.string().refine((val) => !isNaN(new Date(val).getTime()), {
-    message: 'Data/hora final inválida',
-  }),
+  dateTimeStart: z.string(),
+  dateTimeEnd: z.string(),
   occurrence: z.enum(['SEMANALMENTE', 'EVENTO_UNICO']),
   typePractice: z.enum(['TREINO', 'AMISTOSO', 'RECREACAO']),
-
-  // Classroom
-  course: z.string(),
-  matter: z.string(),
-
-  // Event
-  name: z.string(),
-  description: z.string(),
-  location: z.string(),
 });
 
 export const ReserveSportForm = () => {
-  const [selectedType, setSelectedType] = useState<string>('');
-  const [selectedOccurrence, setSelectedOccurrence] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -52,18 +37,12 @@ export const ReserveSportForm = () => {
     resolver: zodResolver(formSchema),
   });
 
-  // Atualiza o form value quando selectedType muda
-  useEffect(() => {
-    setValue('occurrence', selectedOccurrence as any);
-    setValue('typePractice', selectedType as any);
-  }, [selectedType, setValue]);
-
   const formatToDDMMYYYYHHMM = (dateString: string) => {
     const date = new Date(dateString);
 
     const day = date.getDate().toString().padStart(2, '0');
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear().toString().slice(-2);
+    const year = date.getFullYear().toString();
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
 
@@ -75,40 +54,50 @@ export const ReserveSportForm = () => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (!token) {
-        throw new Error('Token de autenticação não encontrado');
+        toast.error('Por favor, faça login novamente');
+        setIsSubmitting(false);
+        return;
       }
 
-      if (!selectedType || !selectedOccurrence) {
+      // Verifique todos os campos obrigatórios
+      if (
+        !values.typePractice ||
+        !values.occurrence ||
+        !values.dateTimeStart ||
+        !values.dateTimeEnd ||
+        !values.participants
+      ) {
         toast.error('Por favor, preencha todos os campos obrigatórios');
         setIsSubmitting(false);
         return;
       }
-      const formattedStart = formatToDDMMYYYYHHMM(values.dateTimeStart);
-      const formattedEnd = formatToDDMMYYYYHHMM(values.dateTimeEnd);
 
+      // Envie as datas no formato ISO (ou o que seu backend espera)
       const formData = new FormData();
-      formData.append('token', token as string);
-      formData.append('type_Practice', selectedType);
-      formData.append('number_People', values.numberParticipants.toString()); // Adicionado
+      formData.append('token', token);
+      formData.append('typePractice', values.typePractice);
+      formData.append('numberParticipants', values.numberParticipants);
       formData.append('participants', values.participants);
-      formData.append('request_Equipment', values.requestEquipment);
-      formData.append('occurrence', selectedOccurrence); // Corrigido o nome do campo
+      formData.append('requestEquipment', values.requestEquipment || '');
+      formData.append('occurrence', values.occurrence);
+      formData.append('dateTimeStart', formatToDDMMYYYYHHMM(values.dateTimeStart)); // Envie como ISO string
+      formData.append('dateTimeEnd', formatToDDMMYYYYHHMM(values.dateTimeEnd)); // Envie como ISO string
 
-      // Formatando as datas antes de enviar
-      formData.append('dateTimeStart', formattedStart);
-      formData.append('dateTimeEnd', formattedEnd);
-
-      console.log('Dados sendo enviados:', Object.fromEntries(formData.entries())); // Para debug
+      console.log('Dados do FormData:'); // Debug
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
 
       const result = await handleSubmit(formData);
+      console.log('Resultado:', result); // Debug
 
       if (result?.error) {
         toast.error(result.error);
       } else if (result?.success) {
         toast.success(result.message);
-        setTimeout(() => {
-          router.push('/home');
-        }, 2000);
+        setTimeout(() => router.push('/home'), 2000);
+      } else {
+        toast.error('Resposta inesperada do servidor');
       }
     } catch (error) {
       console.error('Erro no onSubmit:', error);
@@ -117,7 +106,6 @@ export const ReserveSportForm = () => {
       setIsSubmitting(false);
     }
   }
-
   const handleBackHome = () => {
     router.push('/');
   };
@@ -130,12 +118,13 @@ export const ReserveSportForm = () => {
               <div className="flex gap-50">
                 {/* Tipo de reserva - Corrigido */}
                 <div className="grid gap-2">
-                  <label htmlFor="reservation-type">Tipo de reserva</label>
+                  <label htmlFor="typePractice">Tipo de reserva</label>
                   <Select
-                    value={selectedType}
-                    onValueChange={(value) => setSelectedType(value)}>
+                    onValueChange={(value) => {
+                      setValue('typePractice', value as 'TREINO' | 'AMISTOSO' | 'RECREACAO');
+                    }}>
                     <SelectTrigger
-                      id="reservation-type"
+                      id="typePractice"
                       className="flex cursor-pointer items-center justify-between text-start px-3 py-2 w-96 rounded bg-white text-black border border-gray-300">
                       <SelectValue placeholder="Selecione o tipo de reserva" />
                     </SelectTrigger>
@@ -163,9 +152,9 @@ export const ReserveSportForm = () => {
 
                 {/* Número de participantes */}
                 <div className="grid gap-2">
-                  <label htmlFor="participants-count">Número de participantes</label>
+                  <label htmlFor="numberParticipants">Número de participantes</label>
                   <input
-                    id="participants-count"
+                    id="numberParticipants"
                     type="number"
                     className="bg-white rounded w-44 px-3 py-2"
                     min="1"
@@ -179,9 +168,9 @@ export const ReserveSportForm = () => {
                 <div className="flex flex-col gap-8">
                   {/* Equipamentos solicitados */}
                   <div className="grid gap-2 h-20">
-                    <label htmlFor="equipment">Equipamentos solicitados</label>
+                    <label htmlFor="requestEquipment">Equipamentos solicitados</label>
                     <input
-                      id="equipment"
+                      id="requestEquipment"
                       type="text"
                       className="bg-white rounded w-96  h-10 px-3 py-2"
                       placeholder="Bola de vôlei"
@@ -192,8 +181,9 @@ export const ReserveSportForm = () => {
                   <div className="grid gap-2">
                     <label htmlFor="occurrence">Ocorrência</label>
                     <Select
-                      value={selectedOccurrence}
-                      onValueChange={(value) => setSelectedOccurrence(value)}>
+                      onValueChange={(value) => {
+                        setValue('occurrence', value as 'SEMANALMENTE' | 'EVENTO_UNICO');
+                      }}>
                       <SelectTrigger
                         id="occurrence"
                         className="flex items-center justify-between cursor-pointer text-start px-3 py-2 w-96 rounded bg-white text-black border border-gray-300">

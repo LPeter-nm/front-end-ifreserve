@@ -1,12 +1,10 @@
 'use client';
-import DashboardManageReserve from '@/components/DashboardManageReserve/manage-reserve-dashboard';
+import DashboardViewReserves from '@/components/DashboardViewReserves/view-reserve-dashboard';
 import Footer from '@/components/Footer/footer';
 import NavbarPrivate, { Role } from '@/components/NavBarPrivate/navbar-private';
-import ReserveSportForm from '@/components/ReserveSportForm/form-reserve-form';
 import { Button } from '@/components/ui/button';
 import { jwtDecode } from 'jwt-decode';
 import { Bell } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
@@ -15,12 +13,12 @@ interface JwtPayload {
   role: string;
 }
 
-const ManageReserve = () => {
+const ViewReserves = () => {
   const [Role, setRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
+    // Verifica se estamos no cliente antes de acessar localStorage
     if (typeof window !== 'undefined') {
       try {
         const token = localStorage.getItem('token');
@@ -31,17 +29,11 @@ const ManageReserve = () => {
         }
 
         const decoded = jwtDecode<JwtPayload>(token);
-        if (decoded.role === 'USER') {
-          router.push('/home');
-          toast.error('Área restrita');
-        }
-
         setRole(decoded.role as Role);
       } catch (error: any) {
-        console.error('Erro detectado:', error);
+        console.error('Error decoding token:', error);
         toast.error(error.message);
         localStorage.removeItem('token');
-        window.location.reload();
       } finally {
         setIsLoading(false);
       }
@@ -61,15 +53,19 @@ const ManageReserve = () => {
   }
 
   if (!Role) {
+    // Redirecionar para login ou mostrar conteúdo para usuário não autenticado
     return null;
   }
 
   return (
-    <div className="flex bg-[#ebe2e2] min-h-screen">
+    <div className="flex min-h-screen bg-[#ebe2e2]">
+      {/* Sidebar (NavbarPrivate) fixo */}
       <NavbarPrivate Role={Role} />
 
+      {/* Conteúdo principal + Footer */}
       <div className="flex-1 flex flex-col min-h-screen">
-        <main className="p-4 flex-grow">
+        {/* Conteúdo principal */}
+        <main className="p-4">
           <div className="flex items-center gap-2 justify-end">
             <Button
               variant="ghost"
@@ -77,9 +73,12 @@ const ManageReserve = () => {
               <Bell size={20} />
             </Button>
           </div>
-          <DashboardManageReserve />
+          <div className="min-h-screen">
+            <DashboardViewReserves />
+          </div>
         </main>
 
+        {/* Footer */}
         <Footer
           footer_bg_color="#1E3231"
           text_color="#FFFFFF"
@@ -89,4 +88,4 @@ const ManageReserve = () => {
   );
 };
 
-export default ManageReserve;
+export default ViewReserves;
