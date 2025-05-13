@@ -120,17 +120,17 @@ const NavbarPrivate = ({ Role }: NavbarPrivateProps) => {
           <>
             <NavButton
               icon={User}
-              path="/students"
+              path="/manage-student"
               label="Alunos"
             />
             <NavButton
               icon={UserCog}
-              path="/staff"
+              path="/manage-server"
               label="Servidores"
             />
             <NavButton
               icon={Users}
-              path="/externals"
+              path="/manage-external"
               label="Externos"
             />
           </>

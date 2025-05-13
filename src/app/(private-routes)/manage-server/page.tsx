@@ -1,9 +1,8 @@
 'use client';
-import DashboardManageReserve from '@/components/DashboardManageReserve/manage-reserve-dashboard';
 import Footer from '@/components/Footer/footer';
+import ServerTable from '@/components/ManageServer/manage-server-table';
 import NavbarPrivate, { Role } from '@/components/NavBarPrivate/navbar-private';
 import NotificationModal from '@/components/NotificationModal/notification-modal';
-import ReserveSportForm from '@/components/ReserveSportForm/form-reserve-form';
 import { Button } from '@/components/ui/button';
 import { jwtDecode } from 'jwt-decode';
 import { Bell } from 'lucide-react';
@@ -16,7 +15,7 @@ interface JwtPayload {
   role: string;
 }
 
-const ManageReserve = () => {
+const ManageServer = () => {
   const [Role, setRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -71,8 +70,12 @@ const ManageReserve = () => {
 
       <div className="flex-1 flex flex-col min-h-screen">
         <main className="p-4 flex-grow">
-          <div className="flex items-center gap-2 justify-end"></div>
-          <DashboardManageReserve />
+          <div className="flex items-center gap-2 justify-end">
+            <NotificationModal />
+          </div>
+          <div className="min-h-screen">
+            <ServerTable />
+          </div>
         </main>
 
         <Footer
@@ -84,4 +87,4 @@ const ManageReserve = () => {
   );
 };
 
-export default ManageReserve;
+export default ManageServer;

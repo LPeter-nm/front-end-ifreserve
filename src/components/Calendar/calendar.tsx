@@ -16,6 +16,7 @@ export interface Reserves {
   status: string;
   comments?: string;
   user: {
+    id: string;
     name: string;
     role: string;
     typeUser: string;

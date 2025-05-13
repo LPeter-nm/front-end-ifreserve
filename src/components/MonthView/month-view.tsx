@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { addDays, format, isSameDay, parseISO } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Reserves } from '../Calendar/calendar';
-import { CalendarEventDetails } from '../CalendarEventDetails/calendar-event-details';
-import { updateReserve } from '../CalendarEvent/action';
+import { CalendarEventDetails } from '../CalendarEventMonth/calendar-event-month';
+import { updateReserve } from '../CalendarEventWeek/action';
 import toast from 'react-hot-toast';
 import { Role } from '../NavBarPrivate/navbar-private';
 
@@ -147,7 +147,6 @@ export function MonthCalendarView({ initialReserves = [], Role }: CalendarBasePr
   };
 
   const isCurrentWeek = isSameDay(currentDate, new Date());
-
   const formatTime = (dateTime: Date) => {
     if (!dateTime) return '';
     const date = new Date(dateTime);
@@ -222,7 +221,7 @@ export function MonthCalendarView({ initialReserves = [], Role }: CalendarBasePr
                         dayReserves[0].classroom?.matter ||
                         dayReserves[0].event?.name}
                     </div>
-                    <div className="font-semibold truncate">{dayReserves[0].typeReserve}</div>
+                    <div className="font-semibold truncate">{dayReserves[0].type_Reserve}</div>
                     <div className="text-xs truncate">
                       {formatTime(dayReserves[0].dateTimeStart)}-
                       {formatTime(dayReserves[0].dateTimeEnd)}
@@ -268,7 +267,7 @@ export function MonthCalendarView({ initialReserves = [], Role }: CalendarBasePr
                   setIsReserveDetailsOpen(true);
                 }}
                 className="p-3 rounded-lg cursor-pointer hover:bg-gray-100 bg-green-300">
-                <div className="font-bold">{reserve.typeReserve}</div>
+                <div className="font-bold">{reserve.type_Reserve}</div>
                 <div className="text-sm">
                   {formatTime(reserve.dateTimeStart)} - {formatTime(reserve.dateTimeEnd)}
                 </div>

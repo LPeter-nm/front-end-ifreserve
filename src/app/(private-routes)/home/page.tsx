@@ -2,6 +2,7 @@
 import CalendarHome from '@/components/Calendar/calendar';
 import Footer from '@/components/Footer/footer';
 import NavbarPrivate, { Role } from '@/components/NavBarPrivate/navbar-private';
+import NotificationModal from '@/components/NotificationModal/notification-modal';
 import { Button } from '@/components/ui/button';
 import { jwtDecode } from 'jwt-decode';
 import { Bell } from 'lucide-react';
@@ -67,11 +68,7 @@ const HomeUser = () => {
         {/* Conteúdo principal */}
         <main className="p-4">
           <div className="flex items-center gap-2 justify-end">
-            <Button
-              variant="ghost"
-              size="icon">
-              <Bell size={20} />
-            </Button>
+            <NotificationModal />
           </div>
           <CalendarHome Role={Role} />
         </main>

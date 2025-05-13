@@ -37,6 +37,7 @@ export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEvent
     ...(reserve.event || {}),
   });
   const [userRole, setUserRole] = useState<Role | null>(null);
+  const [userId, setUserId] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -45,6 +46,7 @@ export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEvent
       try {
         const decoded = jwtDecode<JwtPayload>(token);
         setUserRole(decoded.role as Role);
+        setUserId(decoded.id);
       } catch (error) {
         console.error('Error decoding token:', error);
         localStorage.removeItem('token');
@@ -90,8 +92,9 @@ export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEvent
     const hourEnd = new Date(reserve.dateTimeEnd);
     const hourNow = new Date();
 
+    console.log();
     if (hourNow > hourEnd) {
-      if (userRole === 'USER' && reserve.sport) {
+      if (userRole === 'USER' && reserve.sport && reserve.user.id === userId) {
         return (
           <Button
             variant="outline"

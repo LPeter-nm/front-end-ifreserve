@@ -1,7 +1,7 @@
 'use client';
 import Footer from '@/components/Footer/footer';
 import ReportForm from '@/components/FormReport/report-form';
-import NavbarPrivate, { UserType } from '@/components/NavBarPrivate/navbar-private';
+import NavbarPrivate, { Role } from '@/components/NavBarPrivate/navbar-private';
 import { Button } from '@/components/ui/button';
 import { jwtDecode } from 'jwt-decode';
 import { Bell } from 'lucide-react';
@@ -22,7 +22,7 @@ interface ReportParams {
 }
 
 const Report = () => {
-  const [userType, setUserType] = useState<UserType | null>(null);
+  const [Role, setRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -65,7 +65,7 @@ const Report = () => {
         }
 
         const decoded = jwtDecode<JwtPayload>(token);
-        setUserType(decoded.role as UserType);
+        setRole(decoded.role as Role);
       } catch (error: any) {
         console.error('Erro detectado:', error);
         toast.error('Sessão inválida');
@@ -89,21 +89,15 @@ const Report = () => {
     );
   }
 
-  if (!userType) return null;
+  if (!Role) return null;
 
   return (
     <div className="flex bg-[#ebe2e2] min-h-screen">
-      <NavbarPrivate userType={userType} />
+      <NavbarPrivate Role={Role} />
 
       <div className="flex-1 flex flex-col min-h-screen">
         <main className="p-4 flex-grow">
-          <div className="flex items-center gap-2 justify-end">
-            <Button
-              variant="ghost"
-              size="icon">
-              <Bell size={20} />
-            </Button>
-          </div>
+          <div className="flex items-center gap-2 justify-end"></div>
           <ReportForm params={reportParams} />
         </main>
 

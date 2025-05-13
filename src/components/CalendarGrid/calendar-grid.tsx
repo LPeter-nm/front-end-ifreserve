@@ -4,7 +4,7 @@ import React from 'react';
 import { useState, useEffect } from 'react';
 import { addDays, format, startOfWeek, isSameWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CalendarEvent } from '../CalendarEvent/calendar-event';
+import { CalendarEvent } from '../CalendarEventWeek/calendar-event-week';
 import { useRouter } from 'next/navigation';
 import { Reserves } from '../Calendar/calendar';
 import { getReservesAcepted } from '../Calendar/action';
@@ -63,10 +63,7 @@ export function CalendarGrid({ Role, currentDate, events = [], onDateChange }: C
   const handleCellClick = (cellEvents: Reserves[]) => {
     if (cellEvents.length === 0 && Role === 'USER') {
       router.push('/request-reservation');
-    } else if (
-      (cellEvents.length === 0 && (Role === 'PE_ADMIN' || Role === 'SISTEMA_ADMIN')) ||
-      Role === 'USER'
-    ) {
+    } else if (cellEvents.length === 0 && (Role === 'PE_ADMIN' || Role === 'SISTEMA_ADMIN')) {
       setIsReserveTypeModalOpen(true);
     }
   };

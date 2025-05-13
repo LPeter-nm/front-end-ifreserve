@@ -66,16 +66,9 @@ const ViewReserves = () => {
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Conteúdo principal */}
         <main className="p-4">
-          <div className="flex items-center gap-2 justify-end">
-            <Button
-              variant="ghost"
-              size="icon">
-              <Bell size={20} />
-            </Button>
-          </div>
-          <div className="min-h-screen">
-            <DashboardViewReserves />
-          </div>
+          <div className="flex items-center gap-2 justify-end"></div>
+
+          <DashboardViewReserves />
         </main>
 
         {/* Footer */}

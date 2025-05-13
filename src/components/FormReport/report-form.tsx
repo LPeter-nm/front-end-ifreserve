@@ -8,11 +8,11 @@ import { handleSubmit } from './action';
 import toast from 'react-hot-toast';
 
 const formSchema = z.object({
-  people_Appear: z.string().min(1, 'Número de participantes é obrigatório'),
-  requested_Equipment: z.string().min(1, 'Equipamentos solicitados é obrigatório'),
-  description: z.string(),
-  description_Court: z.string().min(1, 'Descrição da quadra é obrigatória'),
-  description_Equipment: z.string().min(1, 'Descrição do equipamento é obrigatória'),
+  peopleAppear: z.string().min(1, 'Número de participantes é obrigatório'),
+  requestedEquipment: z.string().min(1, 'Equipamentos solicitados é obrigatório'),
+  generalComments: z.string(),
+  courtCondition: z.string().min(1, 'Descrição da quadra é obrigatória'),
+  equipmentCondition: z.string().min(1, 'Descrição do equipamento é obrigatória'),
 });
 
 interface ReportFormParams {
@@ -34,7 +34,7 @@ const ReportForm = ({ params }: { params: ReportFormParams }) => {
   } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      description_Equipment: '',
+      equipmentCondition: '',
     },
   });
 
@@ -58,11 +58,11 @@ const ReportForm = ({ params }: { params: ReportFormParams }) => {
       const formData = new FormData();
       formData.append('token', token);
       formData.append('name_User', userName);
-      formData.append('people_Appear', values.people_Appear);
-      formData.append('requested_Equipment', values.requested_Equipment);
-      formData.append('description', values.description);
-      formData.append('description_Court', values.description_Court);
-      formData.append('description_Equipment', values.description_Equipment);
+      formData.append('peopleAppear', values.peopleAppear);
+      formData.append('requestedEquipment', values.requestedEquipment);
+      formData.append('generalComments', values.generalComments);
+      formData.append('courtCondition', values.courtCondition);
+      formData.append('equipmentCondition', values.equipmentCondition);
       formData.append('time_Used', timeUsed);
       formData.append('date_Used', date);
 
@@ -118,12 +118,12 @@ const ReportForm = ({ params }: { params: ReportFormParams }) => {
                   <input
                     id="equipment"
                     className={`bg-white rounded  h-10 px-3 py-2 ${
-                      errors.description_Equipment ? 'border-red-500' : ''
+                      errors.equipmentCondition ? 'border-red-500' : ''
                     }`}
-                    {...register('requested_Equipment')}
+                    {...register('requestedEquipment')}
                   />
-                  {errors.requested_Equipment && (
-                    <p className="text-red-500 text-sm">{errors.requested_Equipment.message}</p>
+                  {errors.requestedEquipment && (
+                    <p className="text-red-500 text-sm">{errors.requestedEquipment.message}</p>
                   )}
                 </div>
                 <div className="grid gap-2  w-full">
@@ -142,55 +142,55 @@ const ReportForm = ({ params }: { params: ReportFormParams }) => {
                 <textarea
                   id="participants"
                   className={`bg-white rounded w-full px-3 py-2 ${
-                    errors.people_Appear ? 'border-red-500' : ''
+                    errors.peopleAppear ? 'border-red-500' : ''
                   }`}
-                  {...register('people_Appear')}
+                  {...register('peopleAppear')}
                 />
-                {errors.people_Appear && (
-                  <p className="text-red-500 text-sm">{errors.people_Appear.message}</p>
+                {errors.peopleAppear && (
+                  <p className="text-red-500 text-sm">{errors.peopleAppear.message}</p>
                 )}
               </div>
 
               <div className="flex gap-5">
                 <div className="grid gap-2 w-full h-full">
-                  <label htmlFor="descriptionCourt">Descrição da quadra</label>
+                  <label htmlFor="generalCommentsCourt">Descrição da quadra</label>
                   <textarea
-                    id="descriptionCourt"
+                    id="generalCommentsCourt"
                     className={`bg-white rounded px-3 py-2 h-full ${
-                      errors.description ? 'border-red-500' : ''
+                      errors.generalComments ? 'border-red-500' : ''
                     }`}
-                    {...register('description_Court')}
+                    {...register('courtCondition')}
                   />
-                  {errors.description && (
-                    <p className="text-red-500 text-sm">{errors.description.message}</p>
+                  {errors.generalComments && (
+                    <p className="text-red-500 text-sm">{errors.generalComments.message}</p>
                   )}
                 </div>
 
                 <div className="grid gap-2 w-full h-full">
-                  <label htmlFor="descriptionEquipment">Descrição dos equipamentos</label>
+                  <label htmlFor="generalCommentsEquipment">Descrição dos equipamentos</label>
                   <textarea
-                    id="descriptionEquipment"
+                    id="generalCommentsEquipment"
                     className={`bg-white rounded px-3 py-2 h-full ${
-                      errors.description ? 'border-red-500' : ''
+                      errors.generalComments ? 'border-red-500' : ''
                     }`}
-                    {...register('description_Equipment')}
+                    {...register('equipmentCondition')}
                   />
-                  {errors.description && (
-                    <p className="text-red-500 text-sm">{errors.description.message}</p>
+                  {errors.generalComments && (
+                    <p className="text-red-500 text-sm">{errors.generalComments.message}</p>
                   )}
                 </div>
               </div>
               <div className="grid gap-2 h-full">
-                <label htmlFor="description">Descrição livre</label>
+                <label htmlFor="generalComments">Descrição livre</label>
                 <textarea
-                  id="description"
+                  id="generalComments"
                   className={`bg-white rounded px-3 py-2 h-full ${
-                    errors.description ? 'border-red-500' : ''
+                    errors.generalComments ? 'border-red-500' : ''
                   }`}
-                  {...register('description')}
+                  {...register('generalComments')}
                 />
-                {errors.description && (
-                  <p className="text-red-500 text-sm">{errors.description.message}</p>
+                {errors.generalComments && (
+                  <p className="text-red-500 text-sm">{errors.generalComments.message}</p>
                 )}
               </div>
 

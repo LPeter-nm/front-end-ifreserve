@@ -30,6 +30,7 @@ interface Reserves {
   sport: {
     id: string;
     typePractice: string;
+    participants: string;
     numberParticipants?: string;
     requestEquipment?: string;
   };
@@ -46,14 +47,14 @@ interface Reserves {
 
 interface Reports {
   id: string;
-  name_User: string;
-  people_Appear: string;
-  requested_Equipment: string;
+  nameUser: string;
+  peopleAppear: string;
+  requestedEquipment: string;
   description: string;
-  description_Court: string;
-  description_Equipment: string;
-  time_Used: string;
-  date_Used: string;
+  courtCondition: string;
+  equipmentCondition: string;
+  timeUsed: string;
+  dateUsed: string;
 }
 
 export default function DashboardManageReserve() {
@@ -199,8 +200,6 @@ export default function DashboardManageReserve() {
 
   const handleSaveChanges = async () => {
     try {
-      // Aqui você implementaria a lógica para salvar as alterações
-      // Por exemplo, chamando uma API para atualizar a reserva
       toast.success('Alterações salvas com sucesso');
       setIsEditing(false);
       await getAllReserves();
@@ -309,7 +308,7 @@ export default function DashboardManageReserve() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Tipo de Prática</label>
                   <Select
-                    value={editedData.typePractice}
+                    value={editedData.typePractice || ''}
                     onValueChange={(value) => handleInputChange('typePractice', value)}
                     disabled={!isEditing}>
                     <SelectTrigger className={disabledInputClass}>
@@ -332,10 +331,23 @@ export default function DashboardManageReserve() {
                 </div>
                 {editedData.numberParticipants && (
                   <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Número de participantes
+                    </label>
+                    <Input
+                      value={editedData.numberParticipants || ''}
+                      onChange={(e) => handleInputChange('numberParticipants', e.target.value)}
+                      disabled={!isEditing}
+                      className={disabledInputClass}
+                    />
+                  </div>
+                )}
+                {editedData.participants && (
+                  <div>
                     <label className="block text-sm font-medium mb-1">Participantes</label>
                     <Input
-                      value={editedData.numberParticipants}
-                      onChange={(e) => handleInputChange('numberParticipants', e.target.value)}
+                      value={editedData.participants || ''}
+                      onChange={(e) => handleInputChange('participants', e.target.value)}
                       disabled={!isEditing}
                       className={disabledInputClass}
                     />
@@ -345,7 +357,7 @@ export default function DashboardManageReserve() {
                   <div>
                     <label className="block text-sm font-medium mb-1">Equipamentos</label>
                     <Input
-                      value={editedData.requestEquipment}
+                      value={editedData.requestEquipment || ''}
                       onChange={(e) => handleInputChange('requestEquipment', e.target.value)}
                       disabled={!isEditing}
                       className={disabledInputClass}
@@ -390,7 +402,7 @@ export default function DashboardManageReserve() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Matéria</label>
                   <Input
-                    value={editedData.matter}
+                    value={editedData.matter || ''}
                     onChange={(e) => handleInputChange('matter', e.target.value)}
                     disabled={!isEditing}
                     className={disabledInputClass}
@@ -399,7 +411,7 @@ export default function DashboardManageReserve() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Curso</label>
                   <Input
-                    value={editedData.course}
+                    value={editedData.course || ''}
                     onChange={(e) => handleInputChange('course', e.target.value)}
                     disabled={!isEditing}
                     className={disabledInputClass}
@@ -416,7 +428,7 @@ export default function DashboardManageReserve() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Nome</label>
                   <Input
-                    value={editedData.name}
+                    value={editedData.name || ''}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     disabled={!isEditing}
                     className={disabledInputClass}
@@ -425,7 +437,7 @@ export default function DashboardManageReserve() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Local</label>
                   <Input
-                    value={editedData.location}
+                    value={editedData.location || ''}
                     onChange={(e) => handleInputChange('location', e.target.value)}
                     disabled={!isEditing}
                     className={disabledInputClass}
@@ -434,7 +446,7 @@ export default function DashboardManageReserve() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Descrição</label>
                   <Textarea
-                    value={editedData.description}
+                    value={editedData.description || ''}
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     disabled={!isEditing}
                     className={disabledInputClass}

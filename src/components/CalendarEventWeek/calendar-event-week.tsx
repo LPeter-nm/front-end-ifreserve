@@ -37,6 +37,7 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
   const [isLoading, setIsLoading] = useState(false); // Loading durante ações
   const [editedData, setEditedData] = useState<any>({}); // Dados em edição
   const [Role, setRole] = useState<Role | null>(); // Tipo de usuário
+  const [userId, setUserId] = useState('');
   const router = useRouter();
 
   const getRole = () => {
@@ -50,6 +51,7 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
 
       const decoded = jwtDecode<JwtPayload>(token);
       setRole(decoded.role as Role);
+      setUserId(decoded.id);
     } catch (error: any) {
       console.error('Error decoding token:', error);
       toast.error(error.message);
@@ -187,7 +189,7 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
     const hourNow = new Date();
 
     if (hourNow > hourEnd) {
-      if (Role === 'USER' && reserve.sport) {
+      if (Role === 'USER' && reserve.sport && reserve.user.id === userId) {
         return (
           <Button
             variant="outline"
@@ -238,11 +240,13 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
             onClick={() => setIsOpen(false)}>
             Voltar
           </Button>
-          <Button
-            onClick={isEditing ? handleSaveChanges : () => setIsEditing(true)}
-            disabled={isLoading}>
-            {isLoading ? 'Salvando...' : isEditing ? 'Salvar' : 'Editar'}
-          </Button>
+          {reserve.user.id === userId && (
+            <Button
+              onClick={isEditing ? handleSaveChanges : () => setIsEditing(true)}
+              disabled={isLoading}>
+              {isLoading ? 'Salvando...' : isEditing ? 'Salvar' : 'Editar'}
+            </Button>
+          )}
           <CompareHours />
         </div>
       );
