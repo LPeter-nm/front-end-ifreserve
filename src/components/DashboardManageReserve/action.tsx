@@ -1,5 +1,4 @@
 import { api } from '@/app/server/api';
-import { headers } from 'next/headers';
 export async function getReserves(formData: FormData) {
   try {
     const token = formData.get('token');

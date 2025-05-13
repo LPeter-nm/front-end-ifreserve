@@ -2,9 +2,7 @@
 import Footer from '@/components/Footer/footer';
 import NavbarPrivate, { Role } from '@/components/NavBarPrivate/navbar-private';
 import ReserveSportForm from '@/components/ReserveSportForm/form-reserve-form';
-import { Button } from '@/components/ui/button';
 import { jwtDecode } from 'jwt-decode';
-import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 

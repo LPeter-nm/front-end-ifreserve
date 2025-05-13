@@ -2,9 +2,7 @@
 import Footer from '@/components/Footer/footer';
 import ReportForm from '@/components/FormReport/report-form';
 import NavbarPrivate, { Role } from '@/components/NavBarPrivate/navbar-private';
-import { Button } from '@/components/ui/button';
 import { jwtDecode } from 'jwt-decode';
-import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useSearchParams, useRouter } from 'next/navigation';

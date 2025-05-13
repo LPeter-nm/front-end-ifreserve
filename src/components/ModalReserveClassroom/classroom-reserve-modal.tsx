@@ -16,8 +16,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
-import { submitClassroomReserve } from './action'; // Renomeie a função importada
-
+import { submitClassroomReserve } from './action';
 interface ClassroomReserveModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -67,7 +66,6 @@ export function ClassroomReserveModal({ open, onOpenChange, role }: ClassroomRes
         return;
       }
 
-      // Verifique se as datas são válidas
       const startDate = new Date(values.dateTimeStart);
       const endDate = new Date(values.dateTimeEnd);
 

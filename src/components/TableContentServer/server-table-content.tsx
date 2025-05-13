@@ -1,4 +1,4 @@
-import { RefreshCcw, Edit, Loader2, Trash } from 'lucide-react';
+import { Edit, Loader2, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Table,

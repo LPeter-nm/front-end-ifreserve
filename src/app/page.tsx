@@ -1,7 +1,6 @@
 'use client';
 import Footer from '@/components/Footer/footer';
 import { LoginForm } from '@/components/FormLogin/login-form';
-import { TypeUserForm } from '@/components/FormTypeUser/typeuser-form';
 import Navbar from '@/components/NavBarPublic';
 import { Button } from '@/components/ui/button';
 import { redirect, useRouter } from 'next/navigation';

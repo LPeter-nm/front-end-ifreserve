@@ -2,7 +2,7 @@ import { api } from '@/app/server/api';
 
 export async function deleteExternal(userId: string, token: string) {
   try {
-    const response = await api.delete(`user/${userId}`, {
+    await api.delete(`user/${userId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
