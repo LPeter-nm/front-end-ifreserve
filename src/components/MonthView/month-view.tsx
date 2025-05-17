@@ -9,6 +9,7 @@ import { Reserves } from '../Calendar/calendar';
 import { CalendarEventDetails } from '../CalendarEventMonth/calendar-event-month';
 import { updateReserve } from '../CalendarEventWeek/action';
 import toast from 'react-hot-toast';
+import { ptBR } from 'date-fns/locale';
 import { Role } from '../NavBarPrivate/navbar-private';
 
 interface CalendarBaseProps {
@@ -69,15 +70,29 @@ export function MonthCalendarView({ initialReserves = [], Role }: CalendarBasePr
 
   const days = generateCalendarDays();
 
+  // Substitua a função getReservesForDay por esta versão atualizada
   const getReservesForDay = (dayDate: Date): Reserves[] => {
     return reserves.filter((reserve) => {
       if (!reserve?.dateTimeStart) return false;
 
       const eventDate = new Date(reserve.dateTimeStart);
-      return (
+
+      // Verifica se é um evento semanal
+      const isWeekly = reserve.occurrence === 'SEMANALMENTE';
+
+      // Verifica se o dia da semana corresponde (para eventos semanais)
+      const isSameWeekDay = isWeekly && eventDate.getDay() === dayDate.getDay();
+
+      // Verifica se é o mesmo dia (para eventos únicos)
+      const isSameDay =
         dayDate.getDate() === eventDate.getDate() &&
         dayDate.getMonth() === eventDate.getMonth() &&
-        dayDate.getFullYear() === eventDate.getFullYear()
+        dayDate.getFullYear() === eventDate.getFullYear();
+
+      return (
+        (isSameDay || isSameWeekDay) &&
+        // Para eventos semanais, verifica se a data atual é posterior ou igual à data do evento
+        (isWeekly ? dayDate >= eventDate : true)
       );
     });
   };
@@ -222,6 +237,12 @@ export function MonthCalendarView({ initialReserves = [], Role }: CalendarBasePr
                         dayReserves[0].event?.name}
                     </div>
                     <div className="font-semibold truncate">{dayReserves[0].type_Reserve}</div>
+                    {dayReserves[0].occurrence === 'SEMANALMENTE' && (
+                      <div className="text-[10px] italic">
+                        Todo/a{' '}
+                        {format(new Date(dayReserves[0].dateTimeStart), 'EEEE', { locale: ptBR })}
+                      </div>
+                    )}
                     <div className="text-xs truncate">
                       {formatTime(dayReserves[0].dateTimeStart)}-
                       {formatTime(dayReserves[0].dateTimeEnd)}

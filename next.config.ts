@@ -1,10 +1,10 @@
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
-  /* config options here */
-};
-
-module.exports = {
+// next.config.mjs (ou .js)
+const nextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb', // ou '4mb' para um valor mais conservador
+    },
+  },
   async rewrites() {
     return [
       {

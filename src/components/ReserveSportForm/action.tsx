@@ -3,7 +3,9 @@ import { api } from '@/app/server/api';
 
 export async function handleSubmit(formData: FormData) {
   try {
-    const token = formData.get('token');
+    const token = formData.get('token') as string;
+    const pdfFile = formData.get('pdfFile') as File | null;
+
     const requestData = {
       typePractice: formData.get('typePractice'),
       numberParticipants: Number(formData.get('numberParticipants')),
@@ -12,21 +14,44 @@ export async function handleSubmit(formData: FormData) {
       occurrence: formData.get('occurrence'),
       dateTimeStart: formData.get('dateTimeStart'),
       dateTimeEnd: formData.get('dateTimeEnd'),
-    }; // Para debug
+    };
 
-    const response = await api.post('reserve-sport/request', requestData, {
+    console.log('Dados sendo enviados:', requestData);
+
+    const response = await api.post('reserve-sport/request', formData, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
       },
     });
+
+    if (pdfFile && response.data.id) {
+      const fileFormData = new FormData();
+      fileFormData.append('pdfFile', pdfFile);
+
+      await api.patch(`reserve-sport/${response.data.id}/upload`, fileFormData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    }
+
+    console.log('Resposta da API:', response); // Debug
 
     return {
       success: true,
       message: 'Reserva solicitada com sucesso',
-      data: response.data.reserveRequest,
+      data: response.data,
     };
   } catch (error: any) {
-    return { error: error.message };
+    console.error('Erro detalhado:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+
+    // Retorne o erro de forma que o frontend possa exibir
+    return {
+      error: error.response?.data?.message || error.message || 'Erro ao processar a requisição',
+    };
   }
 }

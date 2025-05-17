@@ -20,7 +20,7 @@ interface Reserves {
   type_Reserve: string;
   status: string;
   comments: string;
-  ocurrence: string;
+  occurrence: string;
   dateTimeStart: Date;
   dateTimeEnd: Date;
   user: {
@@ -61,6 +61,7 @@ export default function DashboardManageReserve() {
   const [reserves, setReserves] = useState<Reserves[]>([]);
   const [selectedTab, setSelectedTab] = useState('all');
   const [selectedReserve, setSelectedReserve] = useState<Reserves | null>(null);
+  const [selectedReports, setSelectedReports] = useState<Reports | null>(null);
   const [reports, setReports] = useState();
   const [comment, setComment] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -148,7 +149,7 @@ export default function DashboardManageReserve() {
 
   const filteredReserves = reserves.filter((reserve) => {
     if (selectedTab === 'all') return true;
-    if (selectedTab === 'RECREACAO') return reserve.ocurrence === 'RECREACAO';
+    if (selectedTab === 'RECREACAO') return reserve.sport.typePractice === 'RECREACAO';
     if (selectedTab === 'TREINO') return reserve.sport?.typePractice === 'TREINO';
     if (selectedTab === 'AMISTOSO') return reserve.sport?.typePractice === 'AMISTOSO';
     if (selectedTab === 'aula') return reserve.classroom?.matter;
@@ -236,6 +237,8 @@ export default function DashboardManageReserve() {
     return null;
   };
 
+  const renderReportDetails = () => {};
+
   const renderReserveDetails = () => {
     if (!selectedReserve) {
       return (
@@ -274,6 +277,14 @@ export default function DashboardManageReserve() {
                 <label className="block text-sm font-medium mb-1">Solicitante</label>
                 <Input
                   value={selectedReserve.user.name}
+                  disabled
+                  className={disabledInputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Ocorrência</label>
+                <Input
+                  value={selectedReserve.occurrence}
                   disabled
                   className={disabledInputClass}
                 />

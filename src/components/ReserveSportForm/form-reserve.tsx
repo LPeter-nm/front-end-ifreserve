@@ -23,10 +23,12 @@ const formSchema = z.object({
   dateTimeEnd: z.string(),
   occurrence: z.enum(['SEMANALMENTE', 'EVENTO_UNICO']),
   typePractice: z.enum(['TREINO', 'AMISTOSO', 'RECREACAO']),
+  pdfFile: z.instanceof(File).optional(),
 });
 
 export const ReserveSportForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
   const router = useRouter();
 
   const {
@@ -48,6 +50,25 @@ export const ReserveSportForm = () => {
 
     return `${day}/${month}/${year}, ${hours}:${minutes}`;
   };
+
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      if (e.target.files[0].size > MAX_FILE_SIZE) {
+        toast.error('O arquivo deve ser menor que 5MB');
+        e.target.value = ''; // Limpa o input
+        return;
+      }
+      if (e.target.files[0].type !== 'application/pdf') {
+        toast.error('Apenas arquivos PDF são permitidos');
+        e.target.value = '';
+        return;
+      }
+      setFile(e.target.files[0]);
+    }
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
 
@@ -72,7 +93,6 @@ export const ReserveSportForm = () => {
         return;
       }
 
-      // Envie as datas no formato ISO (ou o que seu backend espera)
       const formData = new FormData();
       formData.append('token', token);
       formData.append('typePractice', values.typePractice);
@@ -80,9 +100,12 @@ export const ReserveSportForm = () => {
       formData.append('participants', values.participants);
       formData.append('requestEquipment', values.requestEquipment || '');
       formData.append('occurrence', values.occurrence);
-      formData.append('dateTimeStart', formatToDDMMYYYYHHMM(values.dateTimeStart)); // Envie como ISO string
-      formData.append('dateTimeEnd', formatToDDMMYYYYHHMM(values.dateTimeEnd)); // Envie como ISO string
-
+      formData.append('dateTimeStart', formatToDDMMYYYYHHMM(values.dateTimeStart));
+      formData.append('dateTimeEnd', formatToDDMMYYYYHHMM(values.dateTimeEnd));
+      // Adiciona o arquivo se existir
+      if (file) {
+        formData.append('pdfFile', file);
+      }
       console.log('Dados do FormData:'); // Debug
       for (let [key, value] of formData.entries()) {
         console.log(key, value);
@@ -116,7 +139,6 @@ export const ReserveSportForm = () => {
           <form onSubmit={formHandleSubmit(onSubmit)}>
             <div className="flex flex-col gap-4">
               <div className="flex gap-50">
-                {/* Tipo de reserva - Corrigido */}
                 <div className="grid gap-2">
                   <label htmlFor="typePractice">Tipo de reserva</label>
                   <Select
@@ -150,7 +172,6 @@ export const ReserveSportForm = () => {
                   </Select>
                 </div>
 
-                {/* Número de participantes */}
                 <div className="grid gap-2">
                   <label htmlFor="numberParticipants">Número de participantes</label>
                   <input
@@ -166,7 +187,6 @@ export const ReserveSportForm = () => {
 
               <div className="flex gap-50">
                 <div className="flex flex-col gap-8">
-                  {/* Equipamentos solicitados */}
                   <div className="grid gap-2 h-20">
                     <label htmlFor="requestEquipment">Equipamentos solicitados</label>
                     <input
@@ -177,7 +197,6 @@ export const ReserveSportForm = () => {
                       {...register('requestEquipment')}
                     />
                   </div>
-                  {/* Ocorrência - Corrigido */}
                   <div className="grid gap-2">
                     <label htmlFor="occurrence">Ocorrência</label>
                     <Select
@@ -206,7 +225,6 @@ export const ReserveSportForm = () => {
                     </Select>
                   </div>
                 </div>
-                {/* Lista de participantes (textarea) */}
                 <div className="grid gap-2 w-full">
                   <label htmlFor="participants">Lista de participantes</label>
                   <textarea
@@ -218,10 +236,7 @@ export const ReserveSportForm = () => {
                   />
                 </div>
               </div>
-
-              {/* Datas e Horas */}
               <div className="flex gap-50">
-                {/* Data inicial */}
                 <div className="flex flex-col w-96 gap-2">
                   <label htmlFor="dateTimeStart">Data e Hora inicial</label>
                   <input
@@ -232,8 +247,6 @@ export const ReserveSportForm = () => {
                     {...register('dateTimeStart')}
                   />
                 </div>
-
-                {/* Data final */}
                 <div className="flex flex-col w-96 gap-2">
                   <label htmlFor="dateTimeEnd">Data final</label>
                   <input
@@ -245,7 +258,19 @@ export const ReserveSportForm = () => {
                   />
                 </div>
               </div>
+              <div className="grid gap-2 mt-4">
+                <label htmlFor="pdfFile">Anexar PDF (Opcional)</label>
+                <input
+                  id="pdfFile"
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileChange}
+                  className="bg-white rounded px-3 py-2 border border-gray-300"
+                />
+                {file && <p className="text-sm text-gray-600">Arquivo selecionado: {file.name}</p>}
+              </div>
             </div>
+
             <div className="flex p-10 gap-50 justify-center">
               <button
                 className="cursor-pointer bg-[#EC221F] text-white rounded p-3 px-10"

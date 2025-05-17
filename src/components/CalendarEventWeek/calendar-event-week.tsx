@@ -19,6 +19,8 @@ import {
 import { useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 import { Role } from '../NavBarPrivate/navbar-private';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface ReservesProps {
   reserve: Reserves;
@@ -168,10 +170,23 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
   };
 
   const renderEventTitle = () => {
-    if (reserve.sport) return reserve.sport.typePractice.toLocaleLowerCase();
-    if (reserve.classroom) return reserve.classroom.matter;
-    if (reserve.event) return reserve.event.name;
-    return reserve.type_Reserve;
+    const title =
+      reserve.sport?.typePractice ||
+      reserve.classroom?.matter ||
+      reserve.event?.name ||
+      reserve.type_Reserve;
+
+    return (
+      <>
+        <div className="font-bold">{reserve.type_Reserve}</div>
+        <div className="font-medium">{title.toLowerCase()}</div>
+        {reserve.occurrence === 'SEMANALMENTE' && (
+          <div className="text-xs italic">
+            (Todo/a {format(new Date(reserve.dateTimeStart), 'EEEE', { locale: ptBR })})
+          </div>
+        )}
+      </>
+    );
   };
 
   function ReportButton() {
@@ -439,8 +454,7 @@ export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
           setIsOpen(true);
         }}
         className={`flex flex-col justify-center items-center ${color} p-1 h-full rounded text-sm overflow-hidden text-center`}>
-        <div className="font-bold">{reserve.type_Reserve}</div>
-        <div className="font-medium">{renderEventTitle()}</div>
+        {renderEventTitle()}
       </div>
 
       <Dialog

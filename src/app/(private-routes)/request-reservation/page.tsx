@@ -1,7 +1,7 @@
 'use client';
 import Footer from '@/components/Footer/footer';
 import NavbarPrivate, { Role } from '@/components/NavBarPrivate/navbar-private';
-import ReserveSportForm from '@/components/ReserveSportForm/form-reserve-form';
+import ReserveSportForm from '@/components/ReserveSportForm/form-reserve';
 import { jwtDecode } from 'jwt-decode';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';

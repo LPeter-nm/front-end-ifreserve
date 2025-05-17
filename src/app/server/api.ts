@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: process.env.API_URL || 'http://localhost:4000/', // Altere para sua URL
+  baseURL: process.env.API_URL || 'http://localhost:4000/',
+  withCredentials: true,
 });
 
 // app/server/api.ts
