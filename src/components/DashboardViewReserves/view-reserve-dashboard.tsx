@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { updateReserve } from '../CalendarEventWeek/action';
 
 interface Reserves {
   id: string;
@@ -77,11 +78,48 @@ export default function DashboardViewReserves() {
     }
   };
 
+  const getRoute = () => {
+    if (selectedReserve?.sport) return 'reserve-sport';
+    if (selectedReserve?.classroom) return 'reserve-classroom';
+    if (selectedReserve?.event) return 'reserve-event';
+    return 'reserves';
+  };
+
+  const formatDateForBackend = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    return `${day}/${month}/${year}, ${hours}:${minutes}`;
+  };
+
   const handleSaveChanges = async () => {
     try {
-      toast.success('Alterações salvas com sucesso');
-      setIsEditing(false);
-      await getAllReserves();
+      // Formatando as datas para o padrão dd/mm/yyyy, hh:mm antes de enviar
+      const dataToSend = {
+        ...editedData,
+        dateTimeStart: formatDateForBackend(editedData.dateTimeStart),
+        dateTimeEnd: formatDateForBackend(editedData.dateTimeEnd),
+      };
+
+      // Chamada à função de atualização
+      const response = await updateReserve(
+        selectedReserve?.id as string,
+        getRoute(),
+        JSON.stringify(dataToSend)
+      );
+
+      if (response.success) {
+        toast.success('Alterações salvas com sucesso');
+        setIsEditing(false);
+        await getAllReserves();
+      } else {
+        toast.error(response.error || 'Erro ao salvar alterações');
+      }
     } catch (error) {
       toast.error('Erro ao salvar alterações');
       console.error(error);
@@ -154,6 +192,7 @@ export default function DashboardViewReserves() {
     if (selectedTab === 'AMISTOSO') return reserve.sport?.typePractice === 'AMISTOSO';
     return true;
   });
+
   const formatDateTimeForInput = (dateTime: Date) => {
     if (!dateTime) return '';
     const date = new Date(dateTime);
@@ -277,7 +316,7 @@ export default function DashboardViewReserves() {
                   <label className="block text-sm font-medium mb-1">Início</label>
                   <Input
                     type="datetime-local"
-                    value={formatDateTimeForInput(selectedReserve.dateTimeStart)}
+                    value={formatDateTimeForInput(editedData.dateTimeStart)}
                     onChange={(e) => handleInputChange('dateTimeStart', e.target.value)}
                     disabled={!isEditing}
                     className={disabledInputClass}
@@ -287,7 +326,7 @@ export default function DashboardViewReserves() {
                   <label className="block text-sm font-medium mb-1">Término</label>
                   <Input
                     type="datetime-local"
-                    value={formatDateTimeForInput(selectedReserve.dateTimeEnd)}
+                    value={formatDateTimeForInput(editedData.dateTimeEnd)}
                     onChange={(e) => handleInputChange('dateTimeEnd', e.target.value)}
                     disabled={!isEditing}
                     className={disabledInputClass}

@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { handleSubmit } from './action';
+import { handleSubmit as submitFormData } from './action';
 import toast from 'react-hot-toast';
 
 const formSchema = z.object({
@@ -111,7 +111,7 @@ export const ReserveSportForm = () => {
         console.log(key, value);
       }
 
-      const result = await handleSubmit(formData);
+      const result = await submitFormData(formData);
       console.log('Resultado:', result); // Debug
 
       if (result?.error) {
@@ -267,12 +267,18 @@ export const ReserveSportForm = () => {
                   onChange={handleFileChange}
                   className="bg-white rounded px-3 py-2 border border-gray-300"
                 />
-                {file && <p className="text-sm text-gray-600">Arquivo selecionado: {file.name}</p>}
+                {file && (
+                  <p className="text-sm text-gray-600">
+                    {' '}
+                    {file.name ? `Arquivo selecionado: ${file.name}` : 'Selecione um arquivo'}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="flex p-10 gap-50 justify-center">
               <button
+                type="button"
                 className="cursor-pointer bg-[#EC221F] text-white rounded p-3 px-10"
                 onClick={handleBackHome}>
                 Voltar
