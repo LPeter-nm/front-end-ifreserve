@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Mail } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { confirmReserve, getReports, getReserves, refusedReserve } from './action';
+import { updateReserve } from '../CalendarEventWeek/action';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -92,6 +93,25 @@ export default function DashboardManageReserve() {
     }
   };
 
+  const getRoute = () => {
+    if (selectedReserve?.sport) return 'reserve-sport';
+    if (selectedReserve?.classroom) return 'reserve-classroom';
+    if (selectedReserve?.event) return 'reserve-event';
+    return 'reserves';
+  };
+
+  const formatDateForBackend = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    return `${day}/${month}/${year}, ${hours}:${minutes}`;
+  };
+
   const handleConfirmReserve = async (reserveId: string) => {
     try {
       const formData = new FormData();
@@ -132,6 +152,35 @@ export default function DashboardManageReserve() {
     }
   };
 
+  const handleSaveChanges = async () => {
+    try {
+      // Formatando as datas para o padrão dd/mm/yyyy, hh:mm antes de enviar
+      const dataToSend = {
+        ...editedData,
+        dateTimeStart: formatDateForBackend(editedData.dateTimeStart),
+        dateTimeEnd: formatDateForBackend(editedData.dateTimeEnd),
+      };
+
+      // Chamada à função de atualização
+      const response = await updateReserve(
+        selectedReserve?.id as string,
+        getRoute(),
+        JSON.stringify(dataToSend)
+      );
+
+      if (response.success) {
+        toast.success('Alterações salvas com sucesso');
+        setIsEditing(false);
+        await getAllReserves();
+      } else {
+        toast.error(response.error || 'Erro ao salvar alterações');
+      }
+    } catch (error) {
+      toast.error('Erro ao salvar alterações');
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     getAllReserves();
   }, []);
@@ -149,7 +198,7 @@ export default function DashboardManageReserve() {
 
   const filteredReserves = reserves.filter((reserve) => {
     if (selectedTab === 'all') return true;
-    if (selectedTab === 'RECREACAO') return reserve.sport.typePractice === 'RECREACAO';
+    if (selectedTab === 'RECREACAO') return reserve.sport?.typePractice === 'RECREACAO';
     if (selectedTab === 'TREINO') return reserve.sport?.typePractice === 'TREINO';
     if (selectedTab === 'AMISTOSO') return reserve.sport?.typePractice === 'AMISTOSO';
     if (selectedTab === 'aula') return reserve.classroom?.matter;
@@ -197,17 +246,6 @@ export default function DashboardManageReserve() {
       ...prev,
       [field]: value,
     }));
-  };
-
-  const handleSaveChanges = async () => {
-    try {
-      toast.success('Alterações salvas com sucesso');
-      setIsEditing(false);
-      await getAllReserves();
-    } catch (error) {
-      toast.error('Erro ao salvar alterações');
-      console.error(error);
-    }
   };
 
   const renderActionButtons = () => {
@@ -293,7 +331,7 @@ export default function DashboardManageReserve() {
                 <label className="block text-sm font-medium mb-1">Início</label>
                 <Input
                   type="datetime-local"
-                  value={formatDateTimeForInput(selectedReserve.dateTimeStart)}
+                  value={formatDateTimeForInput(editedData.dateTimeStart)}
                   onChange={(e) => handleInputChange('dateTimeStart', e.target.value)}
                   disabled={!isEditing}
                   className={disabledInputClass}
@@ -303,7 +341,7 @@ export default function DashboardManageReserve() {
                 <label className="block text-sm font-medium mb-1">Término</label>
                 <Input
                   type="datetime-local"
-                  value={formatDateTimeForInput(selectedReserve.dateTimeEnd)}
+                  value={formatDateTimeForInput(editedData.dateTimeEnd)}
                   onChange={(e) => handleInputChange('dateTimeEnd', e.target.value)}
                   disabled={!isEditing}
                   className={disabledInputClass}

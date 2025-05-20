@@ -4,14 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { redirect, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { redirect, useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-hot-toast';
 import { handleSubmit } from './action';
 import { Eye, EyeOff } from 'lucide-react';
+import { jwtDecode } from 'jwt-decode';
+
+interface DecodedToken {
+  exp: number;
+  [key: string]: any;
+}
 
 const formSchema = z.object({
   email: z
@@ -23,8 +29,39 @@ const formSchema = z.object({
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [hasTokenExpired, setHasTokenExpired] = useState(false);
+
+  useEffect(() => {
+    // Verificar se foi redirecionado por token expirado
+    const expired = searchParams.get('expired');
+    if (expired === 'true') {
+      setHasTokenExpired(true);
+      toast.error('Sua sessão expirou. Por favor, faça login novamente.');
+    }
+
+    // Verificar se já existe um token válido
+    const checkExistingToken = () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const decoded = jwtDecode<DecodedToken>(token);
+          const isExpired = Date.now() >= decoded.exp * 1000;
+          if (!isExpired) {
+            router.push('/home');
+          } else {
+            localStorage.removeItem('token');
+          }
+        } catch (error) {
+          localStorage.removeItem('token');
+        }
+      }
+    };
+
+    checkExistingToken();
+  }, [router, searchParams]);
 
   const {
     register,
@@ -45,24 +82,41 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
 
       if (result?.error) {
         toast.error(result.error);
-      } else if (result?.success) {
-        localStorage.setItem('token', result.token);
+      } else if (result?.success && result.token) {
+        // Verificar se o token recebido é válido antes de armazenar
+        try {
+          const decoded = jwtDecode<DecodedToken>(result.token);
+          const isExpired = Date.now() >= decoded.exp * 1000;
 
-        toast.success(result.message);
-        setTimeout(() => {
+          if (isExpired) {
+            toast.error('O token recebido já está expirado');
+            return;
+          }
+
+          localStorage.setItem('token', result.token);
+          toast.success(result.message);
           router.push('/home');
-        }, 2000);
+        } catch (error) {
+          toast.error('Token inválido recebido');
+          console.error('Erro ao decodificar token:', error);
+        }
       }
+    } catch (error) {
+      toast.error('Ocorreu um erro durante o login');
+      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
   }
-  function handleRedirectRestorePass() {
-    redirect('/restore-password');
+
+  function handleRedirectRestorePass(e: React.MouseEvent) {
+    e.preventDefault();
+    router.push('/restore-password');
   }
 
-  function handleRedirectTypeUser() {
-    redirect('/type-user');
+  function handleRedirectTypeUser(e: React.MouseEvent) {
+    e.preventDefault();
+    router.push('/type-user');
   }
 
   const togglePasswordVisibility = () => {
@@ -77,6 +131,11 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
         <CardHeader>
           <CardTitle>Login</CardTitle>
           <CardDescription>Insira seu email para entrar em sua conta</CardDescription>
+          {hasTokenExpired && (
+            <div className="text-yellow-400 text-sm">
+              Sua sessão anterior expirou. Por favor, faça login novamente.
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={formHandleLogin(onSubmit)}>
@@ -97,7 +156,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
                 <div className="flex items-center">
                   <Label htmlFor="password">Senha</Label>
                   <a
-                    href="#"
+                    href="/restore-password"
                     onClick={handleRedirectRestorePass}
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline">
                     Esqueceu sua senha?
@@ -126,7 +185,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               <div className="flex flex-col gap-3 items-center">
                 <Button
                   type="submit"
-                  className="w-48 bg-[#E3E3E3] text-black cursor-pointer"
+                  className="w-48 bg-[#E3E3E3] text-black cursor-pointer hover:bg-[#d0d0d0]"
                   disabled={loading}>
                   {loading ? 'Logando...' : 'Login'}
                 </Button>
@@ -135,7 +194,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
             <div className="mt-4 text-center text-sm">
               Ainda não se registrou?{' '}
               <a
-                href="#"
+                href="/type-user"
                 onClick={handleRedirectTypeUser}
                 className="cursor-pointer underline underline-offset-4">
                 Clique aqui

@@ -2,18 +2,58 @@
 
 import { ReactNode, useEffect, useState } from 'react';
 import { redirect } from 'next/navigation';
+import { jwtDecode } from 'jwt-decode';
+
+interface DecodedToken {
+  exp: number;
+}
 
 const PrivateLayout = ({ children }: { children: ReactNode }) => {
-  const [token, setToken] = useState<string | null>(null);
+  const [isValid, setIsValid] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    setToken(storedToken);
+    const checkAuth = () => {
+      const storedToken = localStorage.getItem('token');
 
-    if (!storedToken) {
-      redirect('/');
-    }
+      if (!storedToken) {
+        setIsValid(false);
+        redirect('/login');
+        return;
+      }
+
+      try {
+        const decoded = jwtDecode<DecodedToken>(storedToken);
+        const isExpired = Date.now() >= decoded.exp * 1000;
+
+        if (isExpired) {
+          localStorage.removeItem('token');
+          setIsValid(false);
+          redirect('/login?expired=true');
+        } else {
+          setIsValid(true);
+        }
+      } catch (error) {
+        console.error('Token inválido:', error);
+        localStorage.removeItem('token');
+        setIsValid(false);
+        redirect('/login');
+      }
+    };
+
+    checkAuth();
+
+    // Opcional: Verificar periodicamente (a cada minuto, por exemplo)
+    const interval = setInterval(checkAuth, 60000);
+    return () => clearInterval(interval);
   }, []);
+
+  if (isValid === null) {
+    return <div>Carregando...</div>; // Ou algum spinner
+  }
+
+  if (!isValid) {
+    return null; // O redirecionamento já foi tratado no useEffect
+  }
 
   return <>{children}</>;
 };
