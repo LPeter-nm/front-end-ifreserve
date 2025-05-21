@@ -3,7 +3,16 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Mail } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { confirmReserve, getReports, getReserves, refusedReserve, removeReserve } from './action';
+import {
+  confirmReserve,
+  getReports,
+  getReserves,
+  refusedReserve,
+  removeReserve,
+  updateReport,
+  validateReport,
+  removeReport,
+} from './action';
 import { updateReserve } from '../CalendarEventWeek/action';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
@@ -28,6 +37,7 @@ interface Reserves {
   dateTimeStart: Date;
   dateTimeEnd: Date;
   user: {
+    id: string;
     name: string;
     role: string;
   };
@@ -60,6 +70,7 @@ interface Reports {
   timeUsed: string;
   dateUsed: string;
   sportId: string;
+  statusReadAdmin: boolean;
 }
 
 interface JwtPayload {
@@ -78,18 +89,18 @@ export default function DashboardManageReserve() {
   const [isEditing, setIsEditing] = useState(false);
   const [Role, setRole] = useState<Role | null>();
   const [userId, setUserId] = useState('');
+  const [isEditingReport, setIsEditingReport] = useState(false);
+  const [editedReport, setEditedReport] = useState<any>({});
   const [editedData, setEditedData] = useState<any>({});
   const router = useRouter();
 
   const getRole = () => {
     try {
       const token = localStorage.getItem('token');
-
       if (!token) {
         setIsLoading(false);
         return;
       }
-
       const decoded = jwtDecode<JwtPayload>(token);
       setRole(decoded.role as Role);
       setUserId(decoded.id);
@@ -126,38 +137,6 @@ export default function DashboardManageReserve() {
     }
   };
 
-  // Adicione este estado no componente
-  const [reportData, setReportData] = useState<{
-    sportId: string;
-    date: string;
-    timeUsed: string;
-    userName: string;
-  } | null>(null);
-
-  // Modifique a função handleReportForm
-  const handleReportForm = () => {
-    const calculateTimeUsed = () => {
-      const start = new Date(editedData.dateTimeStart);
-      const end = new Date(editedData.dateTimeEnd);
-      const diffMs = end.getTime() - start.getTime();
-      const diffMins = Math.round(diffMs / 60000);
-      const hours = Math.floor(diffMins / 60);
-      const minutes = diffMins % 60;
-      return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-    };
-
-    // Armazena os dados no estado antes de navegar
-    setReportData({
-      sportId: editedData.sport?.id,
-      date: formatDateTime(editedData.dateTimeStart),
-      timeUsed: calculateTimeUsed(),
-      userName: selectedReserve?.user.name || '',
-    });
-
-    // Navega para a página de relatório sem parâmetros na URL
-    router.push('/report');
-  };
-
   const getRoute = () => {
     if (selectedReserve?.sport) return 'reserve-sport';
     if (selectedReserve?.classroom) return 'reserve-classroom';
@@ -173,7 +152,6 @@ export default function DashboardManageReserve() {
     const year = date.getFullYear();
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
-
     return `${day}/${month}/${year}, ${hours}:${minutes}`;
   };
 
@@ -228,6 +206,8 @@ export default function DashboardManageReserve() {
         toast.error(result.error);
       } else {
         toast.success('Reserva deletada com sucesso');
+        setSelectedReserve(null);
+        await getAllReserves();
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -262,6 +242,67 @@ export default function DashboardManageReserve() {
     }
   };
 
+  // Funções para Relatórios
+  const handleUpdateReport = async () => {
+    try {
+      const formData = new FormData();
+      formData.append('token', localStorage.getItem('token') as string);
+
+      const result = await updateReport(formData, selectedReport?.id as string, editedReport);
+
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Relatório atualizado com sucesso');
+        setIsEditingReport(false);
+        await getAllReports();
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao atualizar relatório');
+    }
+  };
+
+  const handleValidateReport = async () => {
+    if (!selectedReport) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('token', localStorage.getItem('token') as string);
+
+      const result = await validateReport(formData, selectedReport.id);
+
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Relatório validado com sucesso');
+        await getAllReports();
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao validar relatório');
+    }
+  };
+
+  const handleRemoveReport = async () => {
+    if (!selectedReport) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('token', localStorage.getItem('token') as string);
+
+      const result = await removeReport(formData, selectedReport.id);
+
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Relatório removido com sucesso');
+        setSelectedReport(null);
+        await getAllReports();
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao remover relatório');
+    }
+  };
+
   useEffect(() => {
     getAllReserves();
     getAllReports();
@@ -277,7 +318,16 @@ export default function DashboardManageReserve() {
         ...(selectedReserve.event || {}),
       });
     }
-  }, [selectedReserve]);
+    if (selectedReport) {
+      setEditedReport({
+        peopleAppear: selectedReport.peopleAppear,
+        requestedEquipment: selectedReport.requestedEquipment,
+        description: selectedReport.description,
+        courtCondition: selectedReport.courtCondition,
+        equipmentCondition: selectedReport.equipmentCondition,
+      });
+    }
+  }, [selectedReserve, selectedReport]);
 
   const filteredReserves = reserves.filter((reserve) => {
     if (selectedTab === 'all') return true;
@@ -292,7 +342,7 @@ export default function DashboardManageReserve() {
   const filteredReports = reports.filter((report) => {
     if (selectedTab === 'all') return true;
     if (selectedTab === 'RECREACAO' || selectedTab === 'TREINO' || selectedTab === 'AMISTOSO') {
-      return true; // Relatórios estão associados a esportes
+      return true;
     }
     return false;
   });
@@ -324,6 +374,19 @@ export default function DashboardManageReserve() {
     });
   };
 
+  const formatDateLocal = (dateString: string) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      return dateString;
+    }
+  };
+
   const formatDateTimeForInput = (dateTime: Date) => {
     if (!dateTime) return '';
     const date = new Date(dateTime);
@@ -332,27 +395,15 @@ export default function DashboardManageReserve() {
     return localDate.toISOString().slice(0, 16);
   };
 
-  const formatReportDate = (dateString: string) => {
-    if (!dateString) return '';
-
-    try {
-      const date = new Date(dateString);
-
-      if (isNaN(date.getTime())) return dateString;
-
-      const day = String(date.getDate() + 1).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-
-      return `${day}/${month}/${year}`;
-    } catch (error) {
-      console.error('Erro ao formatar data:', error);
-      return dateString; // Retorna o original em caso de erro
-    }
-  };
-
   const handleInputChange = (field: string, value: string) => {
     setEditedData((prev: any) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleReportInputChange = (field: string, value: string) => {
+    setEditedReport((prev: any) => ({
       ...prev,
       [field]: value,
     }));
@@ -378,24 +429,15 @@ export default function DashboardManageReserve() {
       return (
         <div className="flex gap-2">
           <Button
-            className="cursor-pointer"
             variant="destructive"
             onClick={handleRemoveReserve}>
             Remover reserva
           </Button>
           <Button
-            className="cursor-pointer"
             variant="outline"
             onClick={() => setIsEditing(true)}>
             Editar
           </Button>
-          {selectedReserve.sport && selectedReserve.sport.id === userId && (
-            <Button
-              variant="outline"
-              onClick={handleReportForm}>
-              Realizar Relatório
-            </Button>
-          )}
         </div>
       );
     }
@@ -416,10 +458,47 @@ export default function DashboardManageReserve() {
       );
     }
 
+    const disabledInputClass =
+      'disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed';
+
     return (
       <div className="w-full bg-white md:w-1/2 border rounded-md p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Detalhes do Relatório</h2>
+          {(Role === 'PE_ADMIN' || Role === 'SISTEMA_ADMIN') && (
+            <div className="flex gap-2">
+              {isEditingReport ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditingReport(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleUpdateReport}>Confirmar</Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditingReport(true)}>
+                    Editar
+                  </Button>
+                  <Button
+                    variant="default"
+                    onClick={handleValidateReport}
+                    disabled={isEditingReport}>
+                    Validar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleRemoveReport}
+                    disabled={isEditingReport}>
+                    Remover
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -431,7 +510,7 @@ export default function DashboardManageReserve() {
                 <Input
                   value={selectedReport.id}
                   disabled
-                  className="disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
+                  className={disabledInputClass}
                 />
               </div>
               <div>
@@ -439,15 +518,15 @@ export default function DashboardManageReserve() {
                 <Input
                   value={selectedReport.nameUser}
                   disabled
-                  className="disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
+                  className={disabledInputClass}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Data de Uso</label>
                 <Input
-                  value={formatReportDate(selectedReport.dateUsed)}
+                  value={formatDateLocal(selectedReport.dateUsed)}
                   disabled
-                  className="disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
+                  className={disabledInputClass}
                 />
               </div>
               <div>
@@ -455,7 +534,7 @@ export default function DashboardManageReserve() {
                 <Input
                   value={selectedReport.timeUsed}
                   disabled
-                  className="disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
+                  className={disabledInputClass}
                 />
               </div>
             </div>
@@ -467,41 +546,56 @@ export default function DashboardManageReserve() {
               <div>
                 <label className="block text-sm font-medium mb-1">Pessoas Presentes</label>
                 <Input
-                  value={selectedReport.peopleAppear}
-                  disabled
-                  className="disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
+                  value={isEditingReport ? editedReport.peopleAppear : selectedReport.peopleAppear}
+                  onChange={(e) => handleReportInputChange('peopleAppear', e.target.value)}
+                  disabled={!isEditingReport}
+                  className={disabledInputClass}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Equipamentos Solicitados</label>
                 <Input
-                  value={selectedReport.requestedEquipment}
-                  disabled
-                  className="disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
+                  value={
+                    isEditingReport
+                      ? editedReport.requestedEquipment
+                      : selectedReport.requestedEquipment
+                  }
+                  onChange={(e) => handleReportInputChange('requestedEquipment', e.target.value)}
+                  disabled={!isEditingReport}
+                  className={disabledInputClass}
                 />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">Condição da Quadra</label>
                 <Textarea
-                  value={selectedReport.courtCondition}
-                  disabled
-                  className="disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
+                  value={
+                    isEditingReport ? editedReport.courtCondition : selectedReport.courtCondition
+                  }
+                  onChange={(e) => handleReportInputChange('courtCondition', e.target.value)}
+                  disabled={!isEditingReport}
+                  className={disabledInputClass}
                 />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">Condição dos Equipamentos</label>
                 <Textarea
-                  value={selectedReport.equipmentCondition}
-                  disabled
-                  className="disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
+                  value={
+                    isEditingReport
+                      ? editedReport.equipmentCondition
+                      : selectedReport.equipmentCondition
+                  }
+                  onChange={(e) => handleReportInputChange('equipmentCondition', e.target.value)}
+                  disabled={!isEditingReport}
+                  className={disabledInputClass}
                 />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">Descrição</label>
                 <Textarea
-                  value={selectedReport.description}
-                  disabled
-                  className="disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
+                  value={isEditingReport ? editedReport.description : selectedReport.description}
+                  onChange={(e) => handleReportInputChange('description', e.target.value)}
+                  disabled={!isEditingReport}
+                  className={disabledInputClass}
                 />
               </div>
             </div>
@@ -745,6 +839,10 @@ export default function DashboardManageReserve() {
     return reserve.type_Reserve;
   };
 
+  const getReportMessage = (report: Reports) => {
+    return `Relatório de uso - ${formatDateLocal(report.dateUsed)}`;
+  };
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex flex-col md:flex-row gap-4">
@@ -775,7 +873,6 @@ export default function DashboardManageReserve() {
               </Card>
             )}
 
-            {/* Mostrar reservas */}
             {filteredReserves.map((reserve) => (
               <Card
                 key={`reserve-${reserve.id}`}
@@ -793,7 +890,6 @@ export default function DashboardManageReserve() {
                     {reserve.sport?.typePractice && `Reserva ${reserve.status ? 'Solicitada' : ''}`}
                   </h3>
                   <p className="text-sm">{getReserveMessage(reserve)}</p>
-
                   <p className="text-xs mt-1">
                     {formatDateTime(reserve.dateTimeStart)} - {formatDateTime(reserve.dateTimeEnd)}
                   </p>
@@ -805,7 +901,6 @@ export default function DashboardManageReserve() {
               </Card>
             ))}
 
-            {/* Mostrar relatórios */}
             {filteredReports.map((report) => (
               <Card
                 key={`report-${report.id}`}
@@ -818,10 +913,16 @@ export default function DashboardManageReserve() {
                 }}>
                 <div>
                   <h3 className="font-bold text-sm">Relatório de Pós Uso</h3>
-                  <p className="text-sm">Relatório realizado por {report.nameUser}</p>
+                  <p className="text-sm">{getReportMessage(report)}</p>
                   <p className="text-xs mt-1">Tempo de uso: {report.timeUsed}</p>
                 </div>
-                <div className="absolute top-4 right-4 text-green-500 text-sm">Concluído</div>
+                <div className="absolute top-4 right-4">
+                  {report.statusReadAdmin ? (
+                    <span className="text-green-500 text-sm">Validado</span>
+                  ) : (
+                    <span className="text-yellow-500 text-sm">Pendente</span>
+                  )}
+                </div>
               </Card>
             ))}
           </div>

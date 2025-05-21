@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { redirect } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
+import toast from 'react-hot-toast';
 
 interface DecodedToken {
   exp: number;
@@ -26,6 +27,7 @@ const PrivateLayout = ({ children }: { children: ReactNode }) => {
         const isExpired = Date.now() >= decoded.exp * 1000;
 
         if (isExpired) {
+          toast.error('Sua sessão expirou | Faça Login novamente');
           localStorage.removeItem('token');
           setIsValid(false);
           redirect('/?expired=true');
@@ -33,6 +35,7 @@ const PrivateLayout = ({ children }: { children: ReactNode }) => {
           setIsValid(true);
         }
       } catch (error) {
+        toast.error('Sua sessão expirou | Faça Login novamente');
         console.error('Token inválido:', error);
         localStorage.removeItem('token');
         setIsValid(false);
