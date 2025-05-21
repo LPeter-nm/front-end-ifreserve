@@ -5,47 +5,24 @@ import NavbarPrivate, { Role } from '@/components/NavBarPrivate/navbar-private';
 import { jwtDecode } from 'jwt-decode';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useReport } from '@/context/ReportContext';
 
 interface JwtPayload {
   id: string;
   role: string;
 }
 
-interface ReportParams {
-  sportId: string;
-  date: string;
-  timeUsed: string;
-  userName: string;
-}
-
 const Report = () => {
   const [Role, setRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const searchParams = useSearchParams();
   const router = useRouter();
-
-  // Extrai e decodifica os parâmetros da URL
-  const getReportParams = (): ReportParams => {
-    const sportId = searchParams.get('sportId') || '';
-    const date = searchParams.get('date') || '';
-    const timeUsed = searchParams.get('timeUsed') || '';
-    const userName = searchParams.get('nameUser') || '';
-
-    return {
-      sportId,
-      date,
-      timeUsed,
-      userName: decodeURIComponent(userName),
-    };
-  };
-
-  const reportParams = getReportParams();
+  const { reportData } = useReport();
 
   useEffect(() => {
-    // Verifica parâmetros obrigatórios
-    if (!reportParams.sportId || !reportParams.date) {
-      toast.error('Parâmetros inválidos na URL');
+    // Verifica se há dados de relatório
+    if (!reportData?.sportId) {
+      toast.error('Nenhum dado de reserva encontrado');
       router.push('/home');
       return;
     }
@@ -73,7 +50,7 @@ const Report = () => {
         setIsLoading(false);
       }
     }
-  }, [reportParams.sportId, reportParams.date, router]);
+  }, [reportData, router]);
 
   if (isLoading) {
     return (
@@ -87,7 +64,7 @@ const Report = () => {
     );
   }
 
-  if (!Role) return null;
+  if (!Role || !reportData) return null;
 
   return (
     <div className="flex bg-[#ebe2e2] min-h-screen">
@@ -96,7 +73,12 @@ const Report = () => {
       <div className="flex-1 flex flex-col min-h-screen">
         <main className="p-4 flex-grow">
           <div className="flex items-center gap-2 justify-end"></div>
-          <ReportForm params={reportParams} />
+          <ReportForm
+            sportId={reportData.sportId}
+            date={reportData.date}
+            timeUsed={reportData.timeUsed}
+            userName={reportData.userName}
+          />
         </main>
 
         <Footer

@@ -18,11 +18,11 @@ export async function getReserves(formData: FormData) {
 export async function getReports(formData: FormData) {
   try {
     const token = formData.get('token');
+    const userId = formData.get('id');
 
-    const response = await api.get('report/reports', {
+    const response = await api.get(`report/reports/${userId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
       },
     });
 

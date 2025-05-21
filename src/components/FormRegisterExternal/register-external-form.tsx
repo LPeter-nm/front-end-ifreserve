@@ -9,13 +9,16 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { handleSubmit } from './action';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'O nome deve ter no mínimo 2 caracteres' }),
-  cpf: z.string().min(11, { message: 'Seu CPF deve ter no mínimo 11 caracteres' }),
+  cpf: z
+    .string()
+    .min(14, { message: 'CPF inválido' })
+    .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, { message: 'Formato de CPF inválido' }),
   phone: z.string().min(11, { message: 'Seu telefone deve ter no mínimo 11 caracteres' }),
   address: z.string().min(5, { message: 'Seu endereço deve ter no mínimo 5 caracteres' }),
   email: z
@@ -33,21 +36,59 @@ export function RegisterExternalForm({ className, ...props }: React.ComponentPro
     register,
     handleSubmit: formHandleSubmit,
     formState: { errors },
+    setValue,
+    watch,
   } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
+
+  const cpfValue = watch('cpf');
+
+  useEffect(() => {
+    if (cpfValue) {
+      // Remove todos os caracteres não numéricos
+      const numericValue = cpfValue.replace(/\D/g, '');
+
+      // Aplica a formatação do CPF (XXX.XXX.XXX-XX)
+      let formattedValue = numericValue;
+      if (numericValue.length > 3) {
+        formattedValue = `${numericValue.substring(0, 3)}.${numericValue.substring(3)}`;
+      }
+      if (numericValue.length > 6) {
+        formattedValue = `${formattedValue.substring(0, 7)}.${formattedValue.substring(7)}`;
+      }
+      if (numericValue.length > 9) {
+        formattedValue = `${formattedValue.substring(0, 11)}-${formattedValue.substring(11)}`;
+      }
+
+      // Limita o tamanho máximo (14 caracteres com a formatação)
+      formattedValue = formattedValue.substring(0, 14);
+
+      // Atualiza o valor apenas se for diferente do atual
+      if (formattedValue !== cpfValue) {
+        setValue('cpf', formattedValue);
+      }
+    }
+  }, [cpfValue, setValue]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
 
     try {
+      // Remove a formatação antes de enviar
+      const cleanValues = {
+        ...values,
+        cpf: values.cpf.replace(/\D/g, ''),
+        phone: values.phone.replace(/\D/g, ''),
+      };
+
       const formData = new FormData();
-      formData.append('name', values.name);
-      formData.append('cpf', values.cpf);
-      formData.append('phone', values.phone);
-      formData.append('address', values.address);
-      formData.append('email', values.email);
-      formData.append('password', values.password);
+      formData.append('name', cleanValues.name);
+      formData.append('cpf', cleanValues.cpf);
+      formData.append('phone', cleanValues.phone);
+      formData.append('address', cleanValues.address);
+      formData.append('email', cleanValues.email);
+      formData.append('password', cleanValues.password);
 
       const result = await handleSubmit(formData);
 
@@ -93,6 +134,7 @@ export function RegisterExternalForm({ className, ...props }: React.ComponentPro
                   type="text"
                   placeholder="000.000.000-00"
                   required
+                  maxLength={14}
                   {...register('cpf')}
                 />
                 {errors.cpf && <p className="text-red-500 text-sm">{errors.cpf.message}</p>}

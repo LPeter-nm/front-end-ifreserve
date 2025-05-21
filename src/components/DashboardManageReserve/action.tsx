@@ -22,7 +22,6 @@ export async function getReports(formData: FormData) {
     const response = await api.get('report/reports', {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
       },
     });
 
@@ -37,7 +36,7 @@ export async function confirmReserve(formData: FormData, id: string, comment?: s
     const token = formData.get('token');
     const response = await api.patch(
       `reserve/${id}/confirmed`,
-      { comment }, // Envia o comentário no corpo da requisição
+      { comment },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -57,7 +56,7 @@ export async function refusedReserve(formData: FormData, id: string, comment?: s
     const token = formData.get('token');
     const response = await api.patch(
       `reserve/${id}/refused`,
-      { comment }, // Envia o comentário no corpo da requisição
+      { comment },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -65,6 +64,21 @@ export async function refusedReserve(formData: FormData, id: string, comment?: s
         },
       }
     );
+    return response.data;
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function removeReserve(formData: FormData, route: string, id: string) {
+  try {
+    const token = formData.get('token');
+    const response = await api.delete(`reserve/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
     return response.data;
   } catch (error: any) {
     return { error: error.message };

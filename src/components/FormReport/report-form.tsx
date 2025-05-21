@@ -22,8 +22,7 @@ interface ReportFormParams {
   userName: string;
 }
 
-const ReportForm = ({ params }: { params: ReportFormParams }) => {
-  const { sportId, date, timeUsed, userName } = params;
+const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => {
   const router = useRouter();
 
   const {
@@ -39,11 +38,23 @@ const ReportForm = ({ params }: { params: ReportFormParams }) => {
   });
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString + 'T00:00:00Z');
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    // Verifica se a data está no formato "dd/mm/yyyy, hh:mm"
+    if (dateString.includes('/') && dateString.includes(',')) {
+      const [datePart, timePart] = dateString.split(', ');
+      const [day, month, year] = datePart.split('/').map(Number);
+
+      // Cria a data no fuso horário de Brasília (UTC-3)
+      const date = new Date(year, month - 1, day);
+
+      // Ajusta para o fuso horário de Brasília
+      const offset = date.getTimezoneOffset();
+      date.setMinutes(date.getMinutes() + offset);
+
+      return date.toISOString().split('T')[0]; // Retorna yyyy-mm-dd
+    }
+
+    // Se já estiver em outro formato, retorna como está
+    return dateString;
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -57,14 +68,14 @@ const ReportForm = ({ params }: { params: ReportFormParams }) => {
 
       const formData = new FormData();
       formData.append('token', token);
-      formData.append('name_User', userName);
+      formData.append('nameUser', userName);
       formData.append('peopleAppear', values.peopleAppear);
       formData.append('requestedEquipment', values.requestedEquipment);
       formData.append('generalComments', values.generalComments);
       formData.append('courtCondition', values.courtCondition);
       formData.append('equipmentCondition', values.equipmentCondition);
-      formData.append('time_Used', timeUsed);
-      formData.append('date_Used', date);
+      formData.append('timeUsed', timeUsed);
+      formData.append('dateUsed', formatDate(date));
 
       const result = await handleSubmit(formData, sportId);
 

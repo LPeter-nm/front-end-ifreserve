@@ -6,7 +6,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '../ui/card';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -15,7 +15,6 @@ import { handleSubmit as submitFormData } from './action';
 import toast from 'react-hot-toast';
 
 const formSchema = z.object({
-  //Sport
   numberParticipants: z.string(),
   participants: z.string(),
   requestEquipment: z.string(),
@@ -23,7 +22,7 @@ const formSchema = z.object({
   dateTimeEnd: z.string(),
   occurrence: z.enum(['SEMANALMENTE', 'EVENTO_UNICO']),
   typePractice: z.enum(['TREINO', 'AMISTOSO', 'RECREACAO']),
-  pdfFile: z.instanceof(File).optional(),
+  pdfFile: z.any().optional(),
 });
 
 export const ReserveSportForm = () => {
@@ -41,23 +40,21 @@ export const ReserveSportForm = () => {
 
   const formatToDDMMYYYYHHMM = (dateString: string) => {
     const date = new Date(dateString);
-
     const day = date.getDate().toString().padStart(2, '0');
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const year = date.getFullYear().toString();
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
-
     return `${day}/${month}/${year}, ${hours}:${minutes}`;
   };
 
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       if (e.target.files[0].size > MAX_FILE_SIZE) {
         toast.error('O arquivo deve ser menor que 5MB');
-        e.target.value = ''; // Limpa o input
+        e.target.value = '';
         return;
       }
       if (e.target.files[0].type !== 'application/pdf') {
@@ -66,11 +63,13 @@ export const ReserveSportForm = () => {
         return;
       }
       setFile(e.target.files[0]);
+      setValue('pdfFile', e.target.files[0]);
     }
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
+    console.log('Valores no submit:', JSON.stringify(values, null, 2));
 
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -80,7 +79,6 @@ export const ReserveSportForm = () => {
         return;
       }
 
-      // Verifique todos os campos obrigatórios
       if (
         !values.typePractice ||
         !values.occurrence ||
@@ -102,17 +100,18 @@ export const ReserveSportForm = () => {
       formData.append('occurrence', values.occurrence);
       formData.append('dateTimeStart', formatToDDMMYYYYHHMM(values.dateTimeStart));
       formData.append('dateTimeEnd', formatToDDMMYYYYHHMM(values.dateTimeEnd));
-      // Adiciona o arquivo se existir
+
       if (file) {
         formData.append('pdfFile', file);
       }
-      console.log('Dados do FormData:'); // Debug
+
+      console.log('Dados do FormData:');
       for (let [key, value] of formData.entries()) {
         console.log(key, value);
       }
 
       const result = await submitFormData(formData);
-      console.log('Resultado:', result); // Debug
+      console.log('Resultado:', result);
 
       if (result?.error) {
         toast.error(result.error);
@@ -129,9 +128,11 @@ export const ReserveSportForm = () => {
       setIsSubmitting(false);
     }
   }
+
   const handleBackHome = () => {
     router.push('/');
   };
+
   return (
     <div className="p-5">
       <Card className="bg-[#ebe2e2] border-1 border-black pb-0">
@@ -164,7 +165,7 @@ export const ReserveSportForm = () => {
                         Amistoso
                       </SelectItem>
                       <SelectItem
-                        value="EXTERNO"
+                        value="RECREACAO"
                         className="px-3 py-2 hover:bg-gray-100 cursor-pointer">
                         Recreação
                       </SelectItem>
@@ -269,7 +270,6 @@ export const ReserveSportForm = () => {
                 />
                 {file && (
                   <p className="text-sm text-gray-600">
-                    {' '}
                     {file.name ? `Arquivo selecionado: ${file.name}` : 'Selecione um arquivo'}
                   </p>
                 )}

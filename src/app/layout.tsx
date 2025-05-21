@@ -1,3 +1,4 @@
+import { ReportProvider } from '@/context/ReportContext';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
 
@@ -9,8 +10,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`antialiased bg-[#305F5C]`}>
-        <Toaster position="bottom-center" />
-        {children}
+        <ReportProvider>
+          <Toaster position="bottom-center" />
+          {children}
+        </ReportProvider>
       </body>
     </html>
   );

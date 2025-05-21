@@ -17,7 +17,7 @@ const PrivateLayout = ({ children }: { children: ReactNode }) => {
 
       if (!storedToken) {
         setIsValid(false);
-        redirect('/login');
+        redirect('/');
         return;
       }
 
@@ -28,7 +28,7 @@ const PrivateLayout = ({ children }: { children: ReactNode }) => {
         if (isExpired) {
           localStorage.removeItem('token');
           setIsValid(false);
-          redirect('/login?expired=true');
+          redirect('/?expired=true');
         } else {
           setIsValid(true);
         }
@@ -36,7 +36,7 @@ const PrivateLayout = ({ children }: { children: ReactNode }) => {
         console.error('Token inválido:', error);
         localStorage.removeItem('token');
         setIsValid(false);
-        redirect('/login');
+        redirect('/');
       }
     };
 

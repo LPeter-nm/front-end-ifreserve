@@ -25,10 +25,7 @@ export async function handleSubmit(formData: FormData) {
     });
 
     if (pdfFile && response.data.id) {
-      const fileFormData = new FormData();
-      fileFormData.append('pdfFile', pdfFile);
-
-      await api.patch(`reserve-sport/${response.data.id}/upload`, fileFormData, {
+      await api.patch(`reserve-sport/${response.data.id}/upload`, pdfFile, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
