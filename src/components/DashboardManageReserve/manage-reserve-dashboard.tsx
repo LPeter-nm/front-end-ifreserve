@@ -88,13 +88,12 @@ export default function DashboardManageReserve() {
   const [comment, setComment] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [Role, setRole] = useState<Role | null>();
-  const [userId, setUserId] = useState('');
   const [isEditingReport, setIsEditingReport] = useState(false);
   const [editedReport, setEditedReport] = useState<any>({});
   const [editedData, setEditedData] = useState<any>({});
-  const router = useRouter();
 
   const getRole = () => {
+    setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -103,7 +102,6 @@ export default function DashboardManageReserve() {
       }
       const decoded = jwtDecode<JwtPayload>(token);
       setRole(decoded.role as Role);
-      setUserId(decoded.id);
     } catch (error: any) {
       console.error('Error decoding token:', error);
       toast.error(error.message);

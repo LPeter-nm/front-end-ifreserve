@@ -20,12 +20,7 @@ interface CalendarEventDetailsProps {
   onSave: (updatedData: any) => Promise<void>;
 }
 
-interface JwtPayload {
-  id: string;
-  role: string;
-}
-
-export function CalendarEventDetails({ reserve, onClose, onSave }: CalendarEventDetailsProps) {
+export function CalendarEventDetails({ reserve }: CalendarEventDetailsProps) {
   const [data, setData] = useState({
     ...reserve,
     ...(reserve.sport || {}),

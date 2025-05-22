@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader } from '../ui/dialog';
 import { DialogTitle } from '@radix-ui/react-dialog';
 import { Reserves } from '../Calendar/calendar';
@@ -23,7 +23,7 @@ interface ReservesProps {
   onUpdate?: () => void;
 }
 
-export function CalendarEvent({ reserve, color, onUpdate }: ReservesProps) {
+export function CalendarEvent({ reserve, color }: ReservesProps) {
   const [isOpen, setIsOpen] = useState(false); // Controla o modal
   // Dados em edição
 

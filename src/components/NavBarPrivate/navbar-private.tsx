@@ -13,9 +13,7 @@ import {
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { api } from '@/app/server/api';
 import toast from 'react-hot-toast';
-import { cookies } from 'next/headers';
 
 export type Role = 'USER' | 'PE_ADMIN' | 'SISTEMA_ADMIN';
 

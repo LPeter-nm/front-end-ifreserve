@@ -414,34 +414,36 @@ export default function DashboardViewReserves() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Tipo de Prática</label>
-                <Select
-                  value={editedData.typePractice || ''}
-                  onValueChange={(value) => handleInputChange('typePractice', value)}
-                  disabled={!isEditing}>
-                  <SelectTrigger className={disabledInputClass}>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TREINO">Treino</SelectItem>
-                    <SelectItem value="AMISTOSO">Amistoso</SelectItem>
-                    <SelectItem value="RECREACAO">Recreação</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Número de participantes</label>
-                <Input
-                  value={editedData.numberParticipants || ''}
-                  onChange={(e) => handleInputChange('numberParticipants', e.target.value)}
-                  disabled={!isEditing}
-                  className={disabledInputClass}
-                />
+              <div className="flex justify-between">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Tipo de Prática</label>
+                  <Select
+                    value={editedData.typePractice || ''}
+                    onValueChange={(value) => handleInputChange('typePractice', value)}
+                    disabled={!isEditing}>
+                    <SelectTrigger className={disabledInputClass}>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TREINO">Treino</SelectItem>
+                      <SelectItem value="AMISTOSO">Amistoso</SelectItem>
+                      <SelectItem value="RECREACAO">Recreação</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Número de participantes</label>
+                  <Input
+                    value={editedData.numberParticipants || ''}
+                    onChange={(e) => handleInputChange('numberParticipants', e.target.value)}
+                    disabled={!isEditing}
+                    className={disabledInputClass}
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Participantes</label>
-                <Input
+                <Textarea
                   value={editedData.participants || ''}
                   onChange={(e) => handleInputChange('participants', e.target.value)}
                   disabled={!isEditing}
@@ -458,7 +460,7 @@ export default function DashboardViewReserves() {
                 />
               </div>
 
-              <div className="flex gap-5">
+              <div className="flex justify-between">
                 <div>
                   <label className="block text-sm font-medium mb-1">Início</label>
                   <Input

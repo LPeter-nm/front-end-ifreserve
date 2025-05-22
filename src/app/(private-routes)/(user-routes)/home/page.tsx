@@ -1,10 +1,9 @@
 'use client';
+import CalendarHome from '@/components/Calendar/calendar';
 import Footer from '@/components/Footer/footer';
-import ServerTable from '@/components/ManageServer/manage-server-table';
 import NavbarPrivate, { Role } from '@/components/NavBarPrivate/navbar-private';
 import NotificationModal from '@/components/NotificationModal/notification-modal';
 import { jwtDecode } from 'jwt-decode';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
@@ -13,12 +12,13 @@ interface JwtPayload {
   role: string;
 }
 
-const ManageServer = () => {
+const HomeUser = () => {
   const [Role, setRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
+    setIsLoading(true);
+
     if (typeof window !== 'undefined') {
       try {
         const token = localStorage.getItem('token');
@@ -29,17 +29,11 @@ const ManageServer = () => {
         }
 
         const decoded = jwtDecode<JwtPayload>(token);
-        if (decoded.role === 'USER') {
-          router.push('/home');
-          toast.error('Área restrita');
-        }
-
         setRole(decoded.role as Role);
       } catch (error: any) {
-        console.error('Erro detectado:', error);
+        console.error('Error decoding token:', error);
         toast.error(error.message);
         localStorage.removeItem('token');
-        window.location.reload();
       } finally {
         setIsLoading(false);
       }
@@ -48,11 +42,10 @@ const ManageServer = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#ebe2e2]">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]">
-          <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-            Loading...
-          </span>
+      <div className="fixed inset-0 flex items-center justify-center bg-white/80 z-50">
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-gray-600">Carregando...</span>
         </div>
       </div>
     );
@@ -63,17 +56,15 @@ const ManageServer = () => {
   }
 
   return (
-    <div className="flex bg-[#ebe2e2] min-h-screen">
+    <div className="flex min-h-screen bg-[#ebe2e2]">
       <NavbarPrivate Role={Role} />
 
       <div className="flex-1 flex flex-col min-h-screen">
-        <main className="p-4 flex-grow">
+        <main className="p-4">
           <div className="flex items-center gap-2 justify-end">
             <NotificationModal />
           </div>
-          <div className="min-h-screen">
-            <ServerTable />
-          </div>
+          <CalendarHome Role={Role} />
         </main>
 
         <Footer
@@ -85,4 +76,4 @@ const ManageServer = () => {
   );
 };
 
-export default ManageServer;
+export default HomeUser;
