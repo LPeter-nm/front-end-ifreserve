@@ -74,13 +74,10 @@ export function CalendarGrid({ Role, currentDate, events = [], onDateChange }: C
       const eventDate = new Date(reserve.dateTimeStart);
       const eventEndDate = new Date(reserve.dateTimeEnd);
 
-      // Verifica se é um evento semanal
       const isWeekly = reserve.occurrence === 'SEMANALMENTE';
 
-      // Verifica se o dia da semana corresponde (0=Domingo, 1=Segunda, etc.)
       const isSameWeekDay = eventDate.getDay() === dayDate.getDay();
 
-      // Verifica se é o mesmo dia (para eventos únicos)
       const isSameDay =
         eventDate.getDate() === dayDate.getDate() &&
         eventDate.getMonth() === dayDate.getMonth() &&
@@ -93,9 +90,8 @@ export function CalendarGrid({ Role, currentDate, events = [], onDateChange }: C
       const cellEndTime = new Date(dayDate);
       cellEndTime.setHours(hour + 1, minute, 0, 0);
 
-      // Converte os horários para comparar apenas horas/minutos
       const eventStartTime = new Date(eventDate);
-      eventStartTime.setFullYear(2000, 0, 1); // Ano arbitrário para comparação
+      eventStartTime.setFullYear(2000, 0, 1);
       const eventEndTime = new Date(eventEndDate);
       eventEndTime.setFullYear(2000, 0, 1);
       const cellStartCompare = new Date(cellStartTime);
@@ -103,18 +99,15 @@ export function CalendarGrid({ Role, currentDate, events = [], onDateChange }: C
       const cellEndCompare = new Date(cellEndTime);
       cellEndCompare.setFullYear(2000, 0, 1);
 
-      // Verifica se está dentro do intervalo de tempo
       const isInTimeRange =
         (eventStartTime >= cellStartCompare && eventStartTime < cellEndCompare) ||
         (eventEndTime > cellStartCompare && eventEndTime <= cellEndCompare) ||
         (eventStartTime <= cellStartCompare && eventEndTime >= cellEndCompare);
 
-      // Para eventos semanais, verifica apenas o dia da semana e o horário
       if (isWeekly) {
         return isSameWeekDay && isInTimeRange;
       }
 
-      // Para eventos únicos, verifica o dia exato e o horário
       return isSameDay && isInTimeRange;
     });
   };

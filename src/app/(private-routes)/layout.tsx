@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
-import { redirect } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 
@@ -11,6 +11,7 @@ interface DecodedToken {
 
 const PrivateLayout = ({ children }: { children: ReactNode }) => {
   const [isValid, setIsValid] = useState<boolean | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const checkAuth = () => {
@@ -33,6 +34,7 @@ const PrivateLayout = ({ children }: { children: ReactNode }) => {
           redirect('/?expired=true');
         } else {
           setIsValid(true);
+          router.push('home');
         }
       } catch (error) {
         toast.error('Sua sessão expirou | Faça Login novamente');
@@ -51,11 +53,18 @@ const PrivateLayout = ({ children }: { children: ReactNode }) => {
   }, []);
 
   if (isValid === null) {
-    return <div>Carregando...</div>; // Ou algum spinner
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white/80 z-50">
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-10 w-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-gray-600">Carregando...</span>
+        </div>
+      </div>
+    );
   }
 
   if (!isValid) {
-    return null; // O redirecionamento já foi tratado no useEffect
+    return null;
   }
 
   return <>{children}</>;

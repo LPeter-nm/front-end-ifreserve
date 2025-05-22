@@ -40,7 +40,8 @@ export default function Footer({ footer_bg_color, text_color }: FooterColorProps
         <div className="flex mt-8">
           <div className="flex space-x-2">
             <Link
-              href="#"
+              href="https://www.instagram.com/pedin_nm/"
+              target="_blank"
               aria-label="Instagram">
               <Instagram
                 size={20}
@@ -48,7 +49,8 @@ export default function Footer({ footer_bg_color, text_color }: FooterColorProps
               />
             </Link>
             <Link
-              href="#"
+              href="https://www.linkedin.com/in/pedro-gabriel-488a05284/"
+              target="_blank"
               aria-label="LinkedIn">
               <Linkedin
                 size={20}

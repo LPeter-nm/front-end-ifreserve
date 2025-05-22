@@ -45,7 +45,7 @@ const UserLayout = ({ children }: { children: ReactNode }) => {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white/80 z-50">
         <div className="flex flex-col items-center gap-2">
-          <div className="h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="h-10 w-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
           <span className="text-gray-600">Carregando...</span>
         </div>
       </div>
