@@ -1,4 +1,12 @@
-import { RefreshCcw, Edit, Loader2, Trash } from 'lucide-react';
+'use client'; // Indicates this is a client component.
+
+import React, { useState } from 'react'; // React and basic hooks.
+import toast from 'react-hot-toast'; // For displaying notifications (toasts).
+
+// Icons.
+import { Trash, Loader2 } from 'lucide-react'; // Icons for trash and loading spinner.
+
+// UI Components.
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -18,61 +26,103 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import type { External } from '../ManageExternal/manage-external-table';
-import { useState } from 'react';
-import { deleteExternal } from './action';
-import toast from 'react-hot-toast';
 
+// Types.
+import type { External } from '../ManageExternal/manage-external-table'; // Type for external user data.
+
+// Server Actions.
+import { deleteUser } from './action'; // Server Action to delete an external user.
+
+// --- Interfaces for Props ---
 interface ExternalTableContentProps {
-  externals: External[];
-  loading: boolean;
-  totalExternals: number;
+  externals: External[]; // Array of external users to display.
+  loading: boolean; // Loading state from the parent component.
+  totalExternals: number; // Total number of external users (not directly used in this component's render, but good for context).
 }
 
+// --- Main Component ---
 export default function ExternalTableContent({
   externals,
   loading,
-  totalExternals,
+  totalExternals, // `totalExternals` is not used in this component, consider removing if not needed.
 }: ExternalTableContentProps) {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [externalToDelete, setExternalToDelete] = useState<External | null>(null);
+  // --- Component States ---
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // Controls the visibility of the delete confirmation dialog.
+  const [externalToDelete, setExternalToDelete] = useState<External | null>(null); // Stores the external user selected for deletion.
 
+  // --- Utility Functions / Render Helpers ---
+  /**
+   * Renders a status indicator (colored circle) based on user status.
+   * @param status - The status of the user ('ATIVO' or 'INATIVO').
+   */
   const renderStatusIndicator = (status: External['user']['status']) => {
     const statusColors = {
       ATIVO: 'bg-green-500',
       INATIVO: 'bg-gray-300',
     };
-
     return <div className={`w-3 h-3 rounded-full ${statusColors[status]}`} />;
   };
 
+  // --- Event Handlers ---
+  /**
+   * Handles the click on the delete button for a specific external user.
+   * Opens the confirmation dialog.
+   * @param external - The external user object to be deleted.
+   */
   const handleDeleteClick = (external: External) => {
     setExternalToDelete(external);
     setIsDeleteDialogOpen(true);
   };
 
+  /**
+   * Handles the confirmation of deletion from the AlertDialog.
+   * Calls the server action to delete the user.
+   */
   const handleConfirmDelete = async () => {
-    if (externalToDelete) {
-      const token = localStorage.getItem('token') as string;
-      const result = await deleteExternal(externalToDelete.user.id, token);
+    if (!externalToDelete) return; // Should not happen if dialog is opened correctly.
+
+    // Safely attempt to get the token, ensuring it exists before calling the server action.
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+    if (!token) {
+      toast.error('Token de autenticação ausente. Faça login novamente.');
+      setIsDeleteDialogOpen(false);
+      // Optionally, redirect to login page.
+      // useRouter().push('/login');
+      return;
+    }
+
+    try {
+      // Calls the server action to delete the user by their ID.
+      const result = await deleteUser(externalToDelete.user.id, token);
 
       if (result.error) {
-        toast.error(result.error);
+        toast.error(result.error); // Display error message from server action.
       } else {
-        toast.success('Usuário excluído com sucesso');
+        toast.success('Usuário excluído com sucesso!'); // Display success message.
+        // Assuming the parent component (ManageExternalTable) will re-fetch data to update the list.
+        // You might need a callback prop like `onUserDeleted` here if the parent doesn't auto-refresh.
       }
+    } catch (error) {
+      console.error('Error during user deletion:', error);
+      toast.error('Erro ao excluir usuário.');
+    } finally {
+      setIsDeleteDialogOpen(false); // Always close the dialog.
+      setExternalToDelete(null); // Clear the user to delete.
     }
-    setIsDeleteDialogOpen(false);
   };
 
+  // --- Conditional Render: Loading State ---
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center h-64 bg-white rounded-md">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+        <span className="ml-2 text-gray-600">Carregando usuários...</span>
       </div>
     );
   }
 
+  // --- Main JSX Render ---
   return (
     <>
       <Table>
@@ -83,7 +133,7 @@ export default function ExternalTableContent({
             <TableHead className="font-bold text-black w-1/5">Documento</TableHead>
             <TableHead className="font-bold text-black w-1/5">Telefone</TableHead>
             <TableHead className="font-bold text-black w-1/5">Endereço</TableHead>
-            <TableHead className="w-[100px]"></TableHead>
+            <TableHead className="w-[100px]"></TableHead> {/* Actions column */}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -91,19 +141,22 @@ export default function ExternalTableContent({
             externals.map((external) => (
               <TableRow
                 key={external.user.id}
-                className="border-b">
+                className="border-b hover:bg-gray-50">
                 <TableCell className="py-3">{external.user.name}</TableCell>
                 <TableCell>{external.user.email}</TableCell>
                 <TableCell>{external.user.identification}</TableCell>
                 <TableCell>{external.phone}</TableCell>
                 <TableCell>{external.address}</TableCell>
                 <TableCell className="flex items-center space-x-1 justify-end">
+                  {/* Status Indicator */}
                   <div className="px-2">{renderStatusIndicator(external.user.status)}</div>
+                  {/* Delete Button */}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-red-500 hover:text-red-700"
-                    onClick={() => handleDeleteClick(external)}>
+                    className="h-8 w-8 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors"
+                    onClick={() => handleDeleteClick(external)}
+                    title="Excluir usuário">
                     <Trash className="h-4 w-4" />
                   </Button>
                 </TableCell>
@@ -113,15 +166,15 @@ export default function ExternalTableContent({
             <TableRow>
               <TableCell
                 colSpan={6}
-                className="h-24 text-center">
-                Nenhum usuário externo encontrado
+                className="h-24 text-center text-gray-500">
+                Nenhum usuário externo encontrado.
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
 
-      {/* Modal de Confirmação */}
+      {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}>
@@ -129,15 +182,15 @@ export default function ExternalTableContent({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o usuário {externalToDelete?.user.name}?
+              Tem certeza que deseja excluir o usuário **{externalToDelete?.user.name}**?
               <br />
-              <span className="text-red-500">Esta ação não pode ser desfeita.</span>
+              <span className="text-red-500 font-semibold">Esta ação não pode ser desfeita.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-red-500 hover:bg-red-600 focus:ring-red-500" // Added focus styling.
               onClick={handleConfirmDelete}>
               Confirmar
             </AlertDialogAction>

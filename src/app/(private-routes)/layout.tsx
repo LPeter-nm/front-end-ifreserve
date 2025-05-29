@@ -1,57 +1,86 @@
-'use client';
+'use client'; // Indica que este é um componente cliente
 
+// --- Importações de Bibliotecas e Componentes ---
+// Agrupando importações por tipo: bibliotecas externas, depois componentes internos.
 import { ReactNode, useEffect, useState } from 'react';
-import { redirect, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 
+// --- Interfaces ---
+// Definir interfaces próximas ao local de uso, ou em um arquivo separado se forem reusadas.
 interface DecodedToken {
-  exp: number;
+  exp: number; // Timestamp de expiração do token (em segundos desde a Época).
 }
 
+// --- Componente Principal ---
 const PrivateLayout = ({ children }: { children: ReactNode }) => {
+  // --- Estados do Componente ---
+  // `isValid` pode ser `null` (inicial), `true` (autenticado) ou `false` (não autenticado/expirado).
   const [isValid, setIsValid] = useState<boolean | null>(null);
+
+  // --- Hooks de Navegação ---
   const router = useRouter();
 
+  // --- Efeitos Colaterais (useEffect) ---
+  // Lógica principal para verificação de autenticação e expiração do token.
   useEffect(() => {
-    const checkAuth = () => {
+    // Função assíncrona para encapsular a lógica de checagem de autenticação.
+    const checkAuth = async () => {
+      // Inicia o estado de validação como nulo para mostrar o loading.
+      setIsValid(null);
+
+      // A verificação `typeof window !== 'undefined'` é crucial para garantir que
+      // `localStorage` seja acessado apenas no lado do cliente.
+      if (typeof window === 'undefined') {
+        // Em SSR, consideramos que a autenticação será verificada no cliente.
+        // Podemos definir isValid para false ou null e deixar a verificação do cliente lidar.
+        // Aqui, optamos por null para mostrar o spinner até o useEffect rodar no cliente.
+        return;
+      }
+
       const storedToken = localStorage.getItem('token');
 
       if (!storedToken) {
+        // Se não há token, o usuário não está autenticado.
+        toast.error('Você não está logado. Por favor, faça login.');
+        localStorage.removeItem('token'); // Garante que não há lixo.
         setIsValid(false);
-        redirect('/');
-        return;
+        router.push('/'); // Redireciona para a página inicial ou de login.
+        return; // Sai da função do efeito.
       }
 
       try {
         const decoded = jwtDecode<DecodedToken>(storedToken);
+        // Calcula se o token expirou: `Date.now()` (ms) vs `decoded.exp * 1000` (ms).
         const isExpired = Date.now() >= decoded.exp * 1000;
 
         if (isExpired) {
-          toast.error('Sua sessão expirou | Faça Login novamente');
+          // Se o token expirou, informa o usuário e limpa o armazenamento.
+          toast.error('Sua sessão expirou. Por favor, faça login novamente.');
           localStorage.removeItem('token');
           setIsValid(false);
-          redirect('/?expired=true');
+          router.push('/?expired=true'); // Redireciona com um parâmetro para indicação.
         } else {
+          // Se o token é válido e não expirou, permite o acesso.
           setIsValid(true);
-          router.push('home');
         }
       } catch (error) {
-        toast.error('Sua sessão expirou | Faça Login novamente');
-        console.error('Token inválido:', error);
-        localStorage.removeItem('token');
+        // Erro na decodificação do token (token malformado, etc.).
+        console.error('Token inválido ou malformado:', error);
+        toast.error('Sua sessão está inválida. Por favor, faça login novamente.');
+        localStorage.removeItem('token'); // Remove o token inválido.
         setIsValid(false);
-        redirect('/');
+        router.push('/'); // Redireciona para a página inicial ou de login.
       }
     };
 
+    // Executa a função de checagem ao montar o componente.
     checkAuth();
+  }, [router]); // Array de dependências: `router` é uma dependência estável, mas explícita.
 
-    // Opcional: Verificar periodicamente (a cada minuto, por exemplo)
-    const interval = setInterval(checkAuth, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
+  // --- Renderização Condicional (Early Returns) ---
+  // Mostra o spinner de carregamento enquanto a validação está em andamento.
   if (isValid === null) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white/80 z-50">
@@ -63,10 +92,13 @@ const PrivateLayout = ({ children }: { children: ReactNode }) => {
     );
   }
 
+  // Se o token não é válido, não renderiza o conteúdo privado.
+  // O redirecionamento já é tratado no `useEffect`.
   if (!isValid) {
     return null;
   }
 
+  // Se o token é válido, renderiza os componentes filhos.
   return <>{children}</>;
 };
 

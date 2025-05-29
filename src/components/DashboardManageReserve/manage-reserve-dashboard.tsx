@@ -1,19 +1,10 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Mail } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import {
-  confirmReserve,
-  getReports,
-  getReserves,
-  refusedReserve,
-  removeReserve,
-  updateReport,
-  validateReport,
-  removeReport,
-} from './action';
-import { updateReserve } from '../CalendarEventWeek/action';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +19,24 @@ import { useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 import { Role } from '../NavBarPrivate/navbar-private';
 
+// --- Ações de API (Server Actions) ---
+// Importa as Server Actions do arquivo de ações.
+import {
+  confirmReserve,
+  getReports,
+  getReserves,
+  refusedReserve,
+  removeReserve,
+  updateReport,
+  validateReport,
+  removeReport,
+  updateReserve, // Agora importado daqui
+} from './action';
+
+// Ações do outro arquivo, se 'CalendarEventWeek/action.ts' também for Server Action
+// import { updateReserve as updateReserveCalendar } from '../CalendarEventWeek/action';
+
+// --- Interfaces ---
 interface Reserves {
   id: string;
   type_Reserve: string;
@@ -47,6 +56,7 @@ interface Reserves {
     participants: string;
     numberParticipants?: string;
     requestEquipment?: string;
+    report?: {}; // Adicionei a propriedade 'report' para evitar erro de tipo.
   };
   classroom: {
     course: string;
@@ -64,7 +74,7 @@ interface Reports {
   nameUser: string;
   peopleAppear: string;
   requestedEquipment: string;
-  description: string;
+  description: string; // Renomeado de generalComments para description para consistência
   courtCondition: string;
   equipmentCondition: string;
   timeUsed: string;
@@ -78,7 +88,9 @@ interface JwtPayload {
   role: string;
 }
 
+// --- Componente Principal ---
 export default function DashboardManageReserve() {
+  // --- Estados do Componente ---
   const [reserves, setReserves] = useState<Reserves[]>([]);
   const [selectedTab, setSelectedTab] = useState('all');
   const [selectedReserve, setSelectedReserve] = useState<Reserves | null>(null);
@@ -87,65 +99,78 @@ export default function DashboardManageReserve() {
   const [reports, setReports] = useState<Reports[]>([]);
   const [comment, setComment] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [Role, setRole] = useState<Role | null>();
+  const [userRole, setUserRole] = useState<Role | null>();
   const [isEditingReport, setIsEditingReport] = useState(false);
   const [editedReport, setEditedReport] = useState<any>({});
   const [editedData, setEditedData] = useState<any>({});
+  const [token, setToken] = useState<string | null>(null); // Estado para armazenar o token
 
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white/80 z-50">
-        <div className="flex flex-col items-center gap-2">
-          <div className="h-10 w-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-gray-600">Carregando...</span>
-        </div>
-      </div>
-    );
-  }
+  const router = useRouter();
 
-  const getRole = () => {
+  // --- Funções de Carregamento e Autenticação ---
+  const getRoleAndToken = () => {
+    // Renomeado para refletir que obtém o token também
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) {
         setIsLoading(false);
+        // Opcional: router.push('/login'); toast.error('Sessão expirada');
         return;
       }
-      const decoded = jwtDecode<JwtPayload>(token);
-      setRole(decoded.role as Role);
+      setToken(storedToken); // Armazena o token no estado
+      const decoded = jwtDecode<JwtPayload>(storedToken);
+      setUserRole(decoded.role as Role);
     } catch (error: any) {
       console.error('Error decoding token:', error);
       toast.error(error.message);
       localStorage.removeItem('token');
+      setToken(null);
+      // router.push('/login');
     } finally {
       setIsLoading(false);
     }
   };
 
   const getAllReserves = async () => {
+    if (!token) return; // Só busca se o token estiver disponível
     try {
       const formData = new FormData();
-      formData.append('token', localStorage.getItem('token') as string);
+      formData.append('token', token); // Anexa o token à FormData
       const data = await getReserves(formData);
-      setReserves(data);
+      if (data.error) {
+        toast.error(data.error);
+        console.error('Erro ao buscar reservas:', data.error);
+        setReserves([]); // Limpa as reservas em caso de erro
+      } else {
+        setReserves(data);
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'Erro desconhecido ao buscar reservas');
       console.error('Erro ao buscar reservas:', error);
     }
   };
 
   const getAllReports = async () => {
+    if (!token) return; // Só busca se o token estiver disponível
     try {
       const formData = new FormData();
-      formData.append('token', localStorage.getItem('token') as string);
+      formData.append('token', token); // Anexa o token à FormData
       const data = await getReports(formData);
-      setReports(data);
+      if (data.error) {
+        toast.error(data.error);
+        console.error('Erro ao buscar relatórios:', data.error);
+        setReports([]); // Limpa relatórios em caso de erro
+      } else {
+        setReports(Array.isArray(data) ? data : []); // Garante que seja um array
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'Erro desconhecido ao buscar relatórios');
       console.error('Error ao buscar relatórios', error);
     }
   };
 
+  // --- Funções Auxiliares / Utilitárias ---
   const getRoute = () => {
     if (selectedReserve?.sport) return 'reserve-sport';
     if (selectedReserve?.classroom) return 'reserve-classroom';
@@ -162,213 +187,6 @@ export default function DashboardManageReserve() {
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     return `${day}/${month}/${year}, ${hours}:${minutes}`;
-  };
-
-  const handleConfirmReserve = async (reserveId: string) => {
-    try {
-      const formData = new FormData();
-      formData.append('token', localStorage.getItem('token') as string);
-
-      const result = await confirmReserve(formData, reserveId, comment);
-
-      if (result?.error) {
-        toast.error(result.error);
-      } else {
-        toast.success('Reserva confirmada com sucesso');
-        setComment('');
-        await getAllReserves();
-      }
-    } catch (error: any) {
-      toast.error(error.message);
-      console.error('Erro ao confirmar reserva', error);
-    }
-  };
-
-  const handleRejectReserve = async (reserveId: string) => {
-    try {
-      const formData = new FormData();
-      formData.append('token', localStorage.getItem('token') as string);
-
-      const result = await refusedReserve(formData, reserveId, comment);
-
-      if (result?.error) {
-        toast.error(result.error);
-      } else {
-        toast.success('Reserva recusada com sucesso');
-        setComment('');
-        await getAllReserves();
-      }
-    } catch (error: any) {
-      toast.error(error.message);
-      console.error('Erro ao recusar reserva', error);
-    }
-  };
-
-  const handleRemoveReserve = async () => {
-    try {
-      const formData = new FormData();
-      formData.append('token', localStorage.getItem('token') as string);
-
-      const result = await removeReserve(formData, getRoute(), selectedReserve?.id as string);
-
-      if (result?.error) {
-        toast.error(result.error);
-      } else {
-        toast.success('Reserva deletada com sucesso');
-        setSelectedReserve(null);
-        await getAllReserves();
-      }
-    } catch (error: any) {
-      toast.error(error.message);
-      console.error('Erro ao deletar reserva', error);
-    }
-  };
-
-  const handleSaveChanges = async () => {
-    try {
-      const dataToSend = {
-        ...editedData,
-        dateTimeStart: formatDateForBackend(editedData.dateTimeStart),
-        dateTimeEnd: formatDateForBackend(editedData.dateTimeEnd),
-      };
-
-      const response = await updateReserve(
-        selectedReserve?.id as string,
-        getRoute(),
-        JSON.stringify(dataToSend)
-      );
-
-      if (response.success) {
-        toast.success('Alterações salvas com sucesso');
-        setIsEditing(false);
-        await getAllReserves();
-      } else {
-        toast.error(response.error || 'Erro ao salvar alterações');
-      }
-    } catch (error) {
-      toast.error('Erro ao salvar alterações');
-      console.error(error);
-    }
-  };
-
-  // Funções para Relatórios
-  const handleUpdateReport = async () => {
-    try {
-      const formData = new FormData();
-      formData.append('token', localStorage.getItem('token') as string);
-
-      const result = await updateReport(formData, selectedReport?.id as string, editedReport);
-
-      if (result?.error) {
-        toast.error(result.error);
-      } else {
-        toast.success('Relatório atualizado com sucesso');
-        setIsEditingReport(false);
-        await getAllReports();
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao atualizar relatório');
-    }
-  };
-
-  const handleValidateReport = async () => {
-    if (!selectedReport) return;
-
-    try {
-      const formData = new FormData();
-      formData.append('token', localStorage.getItem('token') as string);
-
-      const result = await validateReport(formData, selectedReport.id);
-
-      if (result?.error) {
-        toast.error(result.error);
-      } else {
-        toast.success('Relatório validado com sucesso');
-        await getAllReports();
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao validar relatório');
-    }
-  };
-
-  const handleRemoveReport = async () => {
-    if (!selectedReport) return;
-
-    try {
-      const formData = new FormData();
-      formData.append('token', localStorage.getItem('token') as string);
-
-      const result = await removeReport(formData, selectedReport.id);
-
-      if (result?.error) {
-        toast.error(result.error);
-      } else {
-        toast.success('Relatório removido com sucesso');
-        setSelectedReport(null);
-        await getAllReports();
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao remover relatório');
-    }
-  };
-
-  useEffect(() => {
-    getAllReserves();
-    getAllReports();
-    getRole();
-  }, []);
-
-  useEffect(() => {
-    if (selectedReserve) {
-      setEditedData({
-        ...selectedReserve,
-        ...(selectedReserve.sport || {}),
-        ...(selectedReserve.classroom || {}),
-        ...(selectedReserve.event || {}),
-      });
-    }
-    if (selectedReport) {
-      setEditedReport({
-        peopleAppear: selectedReport.peopleAppear,
-        requestedEquipment: selectedReport.requestedEquipment,
-        description: selectedReport.description,
-        courtCondition: selectedReport.courtCondition,
-        equipmentCondition: selectedReport.equipmentCondition,
-      });
-    }
-  }, [selectedReserve, selectedReport]);
-
-  const filteredReserves = reserves.filter((reserve) => {
-    if (selectedTab === 'all') return true;
-    if (selectedTab === 'RECREACAO') return reserve.sport?.typePractice === 'RECREACAO';
-    if (selectedTab === 'TREINO') return reserve.sport?.typePractice === 'TREINO';
-    if (selectedTab === 'AMISTOSO') return reserve.sport?.typePractice === 'AMISTOSO';
-    if (selectedTab === 'aula') return reserve.classroom?.matter;
-    if (selectedTab === 'evento') return reserve.event?.name;
-    return true;
-  });
-
-  const filteredReports = reports.filter((report) => {
-    if (selectedTab === 'all') return true;
-    if (selectedTab === 'RECREACAO' || selectedTab === 'TREINO' || selectedTab === 'AMISTOSO') {
-      return true;
-    }
-    return false;
-  });
-
-  const renderStatus = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'pendente':
-        return <span className="text-gray-400 text-sm">Pendente</span>;
-      case 'confirmada':
-        return <span className="text-green-500 text-sm">Confirmada</span>;
-      case 'recusada':
-        return <span className="text-red-500 text-sm">Recusada</span>;
-      case 'cadastrado':
-        return <span className="text-green-500 text-sm">Cadastrada</span>;
-      default:
-        return <span className="text-gray-400 text-sm">Status desconhecido</span>;
-    }
   };
 
   const formatDateTime = (dateTime: Date) => {
@@ -404,11 +222,213 @@ export default function DashboardManageReserve() {
     return localDate.toISOString().slice(0, 16);
   };
 
+  const renderStatus = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'pendente':
+        return <span className="text-gray-400 text-sm">Pendente</span>;
+      case 'confirmada':
+        return <span className="text-green-500 text-sm">Confirmada</span>;
+      case 'recusada':
+        return <span className="text-red-500 text-sm">Recusada</span>;
+      case 'cadastrado':
+        return <span className="text-green-500 text-sm">Cadastrada</span>;
+      default:
+        return <span className="text-gray-400 text-sm">Status desconhecido</span>;
+    }
+  };
+
+  const getReserveMessage = (reserve: Reserves) => {
+    if (reserve.user.role === 'PE_ADMIN' || reserve.user.role === 'SISTEMA ADMIN') {
+      return `${reserve.type_Reserve} - Cadastrado por ${reserve.user?.name}`;
+    } else if (reserve.user.role === 'USER') {
+      return `${reserve.type_Reserve} - Solicitado por ${reserve.user?.name}`;
+    }
+    return reserve.type_Reserve;
+  };
+
+  const getReportMessage = (report: Reports) => {
+    return `Relatório de uso - ${formatDateLocal(report.dateUsed)}`;
+  };
+
+  const disabledInputClass =
+    'disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed';
+
+  // --- Handlers de Interação do Usuário (Reservas) ---
+  const handleConfirmReserve = async (reserveId: string) => {
+    if (!token) {
+      toast.error('Token de autenticação ausente. Faça login novamente.');
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('token', token); // Anexa o token
+      const result = await confirmReserve(formData, reserveId, comment);
+
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Reserva confirmada com sucesso');
+        setComment('');
+        await getAllReserves();
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+      console.error('Erro ao confirmar reserva', error);
+    }
+  };
+
+  const handleRejectReserve = async (reserveId: string) => {
+    if (!token) {
+      toast.error('Token de autenticação ausente. Faça login novamente.');
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('token', token); // Anexa o token
+      const result = await refusedReserve(formData, reserveId, comment);
+
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Reserva recusada com sucesso');
+        setComment('');
+        await getAllReserves();
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+      console.error('Erro ao recusar reserva', error);
+    }
+  };
+
+  const handleRemoveReserve = async () => {
+    if (!token) {
+      toast.error('Token de autenticação ausente. Faça login novamente.');
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('token', token); // Anexa o token
+      const result = await removeReserve(formData, getRoute(), selectedReserve?.id as string);
+
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Reserva deletada com sucesso');
+        setSelectedReserve(null);
+        await getAllReserves();
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+      console.error('Erro ao deletar reserva', error);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!token) {
+      toast.error('Token de autenticação ausente. Faça login novamente.');
+      return;
+    }
+    try {
+      const dataToSend = {
+        ...editedData,
+        dateTimeStart: formatDateForBackend(editedData.dateTimeStart),
+        dateTimeEnd: formatDateForBackend(editedData.dateTimeEnd),
+      };
+
+      // Passa o token como argumento explícito para a Server Action
+      const response = await updateReserve(
+        selectedReserve?.id as string,
+        getRoute(),
+        JSON.stringify(dataToSend),
+        token // Passando o token aqui
+      );
+
+      if (response.success) {
+        toast.success('Alterações salvas com sucesso');
+        setIsEditing(false);
+        await getAllReserves();
+      } else {
+        toast.error(response.error || 'Erro ao salvar alterações');
+      }
+    } catch (error) {
+      toast.error('Erro ao salvar alterações');
+      console.error(error);
+    }
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setEditedData((prev: any) => ({
       ...prev,
       [field]: value,
     }));
+  };
+
+  // --- Handlers de Interação do Usuário (Relatórios) ---
+  const handleUpdateReport = async () => {
+    if (!token) {
+      toast.error('Token de autenticação ausente. Faça login novamente.');
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('token', token); // Anexa o token
+      const result = await updateReport(formData, selectedReport?.id as string, editedReport);
+
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Relatório atualizado com sucesso');
+        setIsEditingReport(false);
+        await getAllReports();
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao atualizar relatório');
+    }
+  };
+
+  const handleValidateReport = async () => {
+    if (!selectedReport) return;
+    if (!token) {
+      toast.error('Token de autenticação ausente. Faça login novamente.');
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('token', token); // Anexa o token
+      const result = await validateReport(formData, selectedReport.id);
+
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Relatório validado com sucesso');
+        await getAllReports();
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao validar relatório');
+    }
+  };
+
+  const handleRemoveReport = async () => {
+    if (!selectedReport) return;
+    if (!token) {
+      toast.error('Token de autenticação ausente. Faça login novamente.');
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('token', token); // Anexa o token
+      const result = await removeReport(formData, selectedReport.id);
+
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Relatório removido com sucesso');
+        setSelectedReport(null);
+        await getAllReports();
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao remover relatório');
+    }
   };
 
   const handleReportInputChange = (field: string, value: string) => {
@@ -418,6 +438,61 @@ export default function DashboardManageReserve() {
     }));
   };
 
+  // --- Efeitos Colaterais (useEffect) ---
+  // Este useEffect obtém o token e o papel do usuário na montagem do componente.
+  useEffect(() => {
+    getRoleAndToken();
+  }, []);
+
+  // Este useEffect busca dados de reservas e relatórios quando o token está disponível.
+  useEffect(() => {
+    if (token) {
+      // Só chama as funções de busca se o token estiver disponível
+      getAllReserves();
+      getAllReports();
+    }
+  }, [token]); // Depende do estado `token`
+
+  useEffect(() => {
+    if (selectedReserve) {
+      setEditedData({
+        ...selectedReserve,
+        ...(selectedReserve.sport || {}),
+        ...(selectedReserve.classroom || {}),
+        ...(selectedReserve.event || {}),
+      });
+    }
+    if (selectedReport) {
+      setEditedReport({
+        peopleAppear: selectedReport.peopleAppear,
+        requestedEquipment: selectedReport.requestedEquipment,
+        description: selectedReport.description,
+        courtCondition: selectedReport.courtCondition,
+        equipmentCondition: selectedReport.equipmentCondition,
+      });
+    }
+  }, [selectedReserve, selectedReport]);
+
+  // --- Lógica de Filtro ---
+  const filteredReserves = reserves.filter((reserve) => {
+    if (selectedTab === 'all') return true;
+    if (selectedTab === 'RECREACAO') return reserve.sport?.typePractice === 'RECREACAO';
+    if (selectedTab === 'TREINO') return reserve.sport?.typePractice === 'TREINO';
+    if (selectedTab === 'AMISTOSO') return reserve.sport?.typePractice === 'AMISTOSO';
+    if (selectedTab === 'aula') return reserve.classroom?.matter;
+    if (selectedTab === 'evento') return reserve.event?.name;
+    return true;
+  });
+
+  const filteredReports = reports.filter((report) => {
+    if (selectedTab === 'all') return true;
+    // Removido `reserves.map((reserve) => reserve.sport.report)`
+    // Se você quer filtrar relatórios por tipo de esporte, precisa de uma lógica para `report.sportId`
+    // ou uma aba de "Relatório" mais específica.
+    return true; // Retorna todos os relatórios se não houver filtro específico para eles
+  });
+
+  // --- Funções de Renderização Condicional (Sub-componentes lógicos) ---
   const renderActionButtons = () => {
     if (isEditing) {
       return (
@@ -450,7 +525,7 @@ export default function DashboardManageReserve() {
         </div>
       );
     }
-    return null;
+    return null; // CompareHours não existe neste contexto
   };
 
   const renderReportDetails = () => {
@@ -467,14 +542,11 @@ export default function DashboardManageReserve() {
       );
     }
 
-    const disabledInputClass =
-      'disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed';
-
     return (
       <div className="w-full bg-white md:w-1/2 border rounded-md p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Detalhes do Relatório</h2>
-          {(Role === 'PE_ADMIN' || Role === 'SISTEMA_ADMIN') && (
+          {(userRole === 'PE_ADMIN' || userRole === 'SISTEMA_ADMIN') && (
             <div className="flex gap-2">
               {isEditingReport ? (
                 <>
@@ -618,9 +690,6 @@ export default function DashboardManageReserve() {
     if (!selectedReserve) {
       return renderReportDetails();
     }
-
-    const disabledInputClass =
-      'disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed';
 
     return (
       <div className="w-full bg-white md:w-1/2 border rounded-md p-6">
@@ -839,26 +908,28 @@ export default function DashboardManageReserve() {
     );
   };
 
-  const getReserveMessage = (reserve: Reserves) => {
-    if (reserve.user.role === 'PE_ADMIN' || reserve.user.role === 'SISTEMA ADMIN') {
-      return `${reserve.type_Reserve} - Cadastrado por ${reserve.user?.name}`;
-    } else if (reserve.user.role === 'USER') {
-      return `${reserve.type_Reserve} - Solicitado por ${reserve.user?.name}`;
-    }
-    return reserve.type_Reserve;
-  };
-
-  const getReportMessage = (report: Reports) => {
-    return `Relatório de uso - ${formatDateLocal(report.dateUsed)}`;
-  };
-
+  // --- JSX Principal ---
+  // A estrutura principal da UI do componente.
   return (
     <div className="container mx-auto p-4">
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-white/80 z-50">
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-10 w-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-gray-600">Carregando...</span>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row gap-4">
         <div className="w-full md:w-1/2">
           <Tabs
             defaultValue="all"
-            onValueChange={(value) => setSelectedTab(value)}
+            onValueChange={(value) => {
+              setSelectedTab(value);
+              setSelectedReserve(null); // Limpa a seleção ao mudar de aba
+              setSelectedReport(null); // Limpa a seleção ao mudar de aba
+            }}
             className="mb-4">
             <TabsList className="grid grid-cols-6 w-full">
               <TabsTrigger value="all">Todos</TabsTrigger>
@@ -867,6 +938,7 @@ export default function DashboardManageReserve() {
               <TabsTrigger value="AMISTOSO">Amistoso</TabsTrigger>
               <TabsTrigger value="aula">Aula</TabsTrigger>
               <TabsTrigger value="evento">Evento</TabsTrigger>
+              <TabsTrigger value="Relatório">Relatório</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -890,7 +962,7 @@ export default function DashboardManageReserve() {
                 }`}
                 onClick={() => {
                   setSelectedReserve(reserve);
-                  setSelectedReport(null);
+                  setSelectedReport(null); // Garante que apenas um tipo de item esteja selecionado
                 }}>
                 <div>
                   <h3 className="font-bold text-sm">
@@ -903,7 +975,6 @@ export default function DashboardManageReserve() {
                     {formatDateTime(reserve.dateTimeStart)} - {formatDateTime(reserve.dateTimeEnd)}
                   </p>
                 </div>
-
                 {reserve.status && (
                   <div className="absolute top-4 right-4">{renderStatus(reserve.status)}</div>
                 )}
@@ -918,7 +989,7 @@ export default function DashboardManageReserve() {
                 }`}
                 onClick={() => {
                   setSelectedReport(report);
-                  setSelectedReserve(null);
+                  setSelectedReserve(null); // Garante que apenas um tipo de item esteja selecionado
                 }}>
                 <div>
                   <h3 className="font-bold text-sm">Relatório de Pós Uso</h3>
