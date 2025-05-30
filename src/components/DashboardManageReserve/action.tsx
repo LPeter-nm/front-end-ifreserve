@@ -253,12 +253,13 @@ export async function validateReport(
 ): Promise<any | { error: string }> {
   try {
     const token = formData.get('token');
+    const commentsAdmin = formData.get('commentsAdmin');
     if (!token) {
       return { error: 'Token de autenticação ausente.' };
     }
     const response = await api.patch(
       `report/status/${reportId}`,
-      {}, // Corpo vazio para PATCH, se o status é inferido pela rota.
+      { commentsAdmin }, // Corpo vazio para PATCH, se o status é inferido pela rota.
       {
         headers: {
           Authorization: `Bearer ${token}`,

@@ -53,7 +53,7 @@ export async function getReserves(formData: FormData): Promise<any | { error: st
 export async function getReports(formData: FormData): Promise<any | { error: string }> {
   try {
     const token = formData.get('token'); // Obtém o token da FormData.
-    const userId = formData.get('id'); // Obtém o ID do usuário da FormData.
+    const userId = formData.get('userId'); // Obtém o ID do usuário da FormData.
 
     if (!token) {
       return { error: 'Token de autenticação ausente.' };
@@ -76,7 +76,10 @@ export async function getReports(formData: FormData): Promise<any | { error: str
   } catch (error: any) {
     // Captura qualquer erro que ocorra durante a requisição ou processamento.
     // A mensagem de erro é logada para depuração e retornada ao chamador.
-    console.error(`Erro ao buscar relatórios para o usuário ${formData.get('id')}:`, error.message);
+    console.error(
+      `Erro ao buscar relatórios para o usuário ${formData.get('userId')}:`,
+      error.message
+    );
     return { error: error.message || 'Erro ao buscar relatórios' };
   }
 }

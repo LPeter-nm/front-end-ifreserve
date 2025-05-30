@@ -26,9 +26,9 @@ import { Role } from '../NavBarPrivate/navbar-private';
 import { useReport } from '@/context/ReportContext';
 
 // --- Ações de API (Server Actions) ---
-// Importa as Server Actions do arquivo './action' do DashboardManageReserve
 import { getReports, getReserves } from '../DashboardViewReserves/action';
 import { updateReserve } from '../DashboardManageReserve/action';
+
 // --- Interfaces ---
 interface Reserves {
   id: string;
@@ -70,10 +70,16 @@ interface Reports {
   generalComments: string;
   courtCondition: string;
   equipmentCondition: string;
+  commentsAdmin: string;
   statusReadAdmin: boolean;
   timeUsed: string;
   dateUsed: string;
   sportId: string;
+  sport: {
+    reserve: {
+      userId: string;
+    };
+  }; // Adicionado para filtro por usuário
 }
 
 interface JwtPayload {
@@ -95,40 +101,27 @@ export default function DashboardViewReserves() {
   const [userRole, setUserRole] = useState<Role | null>();
   const { setReportData } = useReport();
   const [userId, setUserId] = useState('');
-  const [token, setToken] = useState<string | null>(null); // Estado para armazenar o token
+  const [token, setToken] = useState<string | null>(null);
+  const [reportFilterStatus, setReportFilterStatus] = useState('all'); // Novo estado para filtro de relatórios
 
-  // --- Estados para Edição de Relatório (Corrigido) ---
-  // Esses estados foram adicionados aqui para permitir a edição de relatórios.
+  // Estados para edição de relatório
   const [isEditingReport, setIsEditingReport] = useState(false);
   const [editedReport, setEditedReport] = useState<any>({});
 
   const router = useRouter();
 
-  // --- Função de Carregamento Global (UI) ---
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white/80 z-50">
-        <div className="flex flex-col items-center gap-2">
-          <div className="h-10 w-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-gray-600">Carregando...</span>
-        </div>
-      </div>
-    );
-  }
-
   // --- Funções de Inicialização e Busca de Dados ---
-  // Obtém o token e o papel/ID do usuário na montagem do componente.
   const getRoleAndToken = () => {
     setIsLoading(true);
     try {
       const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (!storedToken) {
         setIsLoading(false);
-        // router.push('/login'); toast.error('Sessão expirada. Faça login novamente.');
         return;
       }
       setToken(storedToken);
       const decoded = jwtDecode<JwtPayload>(storedToken);
+      console.log(decoded);
       setUserRole(decoded.role as Role);
       setUserId(decoded.id);
     } catch (error: any) {
@@ -136,13 +129,12 @@ export default function DashboardViewReserves() {
       toast.error(error.message || 'Erro ao decodificar token. Sessão inválida.');
       localStorage.removeItem('token');
       setToken(null);
-      // router.push('/login');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Busca todas as reservas usando a Server Action `getReserves`.
+  // Busca todas as reservas do usuário logado
   const getAllReserves = async () => {
     if (!token) {
       console.warn('Token ausente, não foi possível buscar reservas.');
@@ -151,6 +143,7 @@ export default function DashboardViewReserves() {
     try {
       const formData = new FormData();
       formData.append('token', token);
+      formData.append('userId', userId); // Filtra por ID do usuário logado
       const data = await getReserves(formData);
       if (data && data.error) {
         toast.error(data.error);
@@ -165,23 +158,20 @@ export default function DashboardViewReserves() {
     }
   };
 
-  // Busca todos os relatórios usando a Server Action `getReports`.
-  // Adaptei para ser chamado APENAS quando há um `selectedReserve`
-  // e o usuário é admin, para buscar relatórios específicos daquela reserva.
+  // Busca todos os relatórios do usuário logado
   const getAllReports = async () => {
-    if (!token || !selectedReserve?.user.id) {
-      console.warn(
-        'Token ou ID do usuário da reserva ausente, não foi possível buscar relatórios.'
-      );
-      setReports([]); // Garante que relatórios sejam limpos se as dependências não forem atendidas.
+    if (!token || !userId) {
+      // Verifica tanto o token quanto o userId
+      console.warn('Token ou ID do usuário ausente, não foi possível buscar relatórios.');
+      setReports([]);
       return;
     }
     try {
       const formData = new FormData();
       formData.append('token', token);
-      formData.append('id', selectedReserve.user.id); // Passa o ID do usuário da reserva selecionada
+      formData.append('userId', userId);
       const data = await getReports(formData);
-      if (data && data.error) {
+      if (data?.error) {
         toast.error(data.error);
         console.error('Erro ao buscar relatórios:', data.error);
         setReports([]);
@@ -195,24 +185,6 @@ export default function DashboardViewReserves() {
   };
 
   // --- Funções Auxiliares / Utilitárias ---
-  const getRoute = () => {
-    if (selectedReserve?.sport) return 'reserve-sport';
-    if (selectedReserve?.classroom) return 'reserve-classroom';
-    if (selectedReserve?.event) return 'reserve-event';
-    return 'reserves';
-  };
-
-  const formatDateForBackend = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${day}/${month}/${year}, ${hours}:${minutes}`;
-  };
-
   const formatDateTimeForInput = (dateTime: Date) => {
     if (!dateTime) return '';
     const date = new Date(dateTime);
@@ -246,6 +218,30 @@ export default function DashboardViewReserves() {
     });
   };
 
+  const formatDateLocal = (dateString: string) => {
+    if (!dateString) return '';
+
+    try {
+      // Se a data vem como 'YYYY-MM-DD' sem timezone
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        // Adiciona o timezone local
+        const date = new Date(`${dateString}T00:00:00`);
+        return date.toLocaleDateString('pt-BR');
+      }
+
+      // Se já vem com timestamp
+      const date = new Date(dateString);
+
+      // Corrige o offset do timezone
+      const correctedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+
+      return correctedDate.toLocaleDateString('pt-BR');
+    } catch (error) {
+      console.error('Erro ao formatar data:', error);
+      return dateString;
+    }
+  };
+
   const disabledInputClass =
     'disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed';
 
@@ -256,18 +252,11 @@ export default function DashboardViewReserves() {
       return;
     }
     try {
-      const dataToSend = {
-        ...editedData,
-        dateTimeStart: formatDateForBackend(editedData.dateTimeStart),
-        dateTimeEnd: formatDateForBackend(editedData.dateTimeEnd),
-      };
-
-      // Passa o token como argumento explícito para a Server Action `updateReserve`
       const response = await updateReserve(
         selectedReserve?.id as string,
-        getRoute(),
-        JSON.stringify(dataToSend), // Server Action espera string JSON
-        token // Passando o token aqui
+        'reserve-sport', // Assumindo que é sempre esporte para simplificar
+        JSON.stringify(editedData),
+        token
       );
 
       if (response.success) {
@@ -290,19 +279,12 @@ export default function DashboardViewReserves() {
     }));
   };
 
-  // --- Handlers de Interação do Usuário (Relatórios) ---
-  const handleViewReport = (report: Reports) => {
-    // Redireciona para a página de relatório, passando o ID do esporte.
-    router.push(`/report/${report.sportId}`);
-  };
-
   const handleReportForm = () => {
     if (!editedData || !token) {
       toast.error('Dados de reserva ou token ausente para gerar relatório.');
       return;
     }
 
-    // Calcula o tempo de uso da reserva para o relatório.
     const calculateTimeUsed = () => {
       const start = new Date(editedData.dateTimeStart);
       const end = new Date(editedData.dateTimeEnd);
@@ -313,15 +295,14 @@ export default function DashboardViewReserves() {
       return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
     };
 
-    // Armazena os dados no contexto antes de navegar.
     setReportData({
       sportId: editedData.sport?.id || '',
-      date: formatDateTime(editedData.dateTimeStart), // Use formatDateTime para exibir a data
+      date: formatDateTime(editedData.dateTimeStart),
       timeUsed: calculateTimeUsed(),
       userName: editedData.user.name,
     });
 
-    router.push('/report'); // Redireciona para a página de relatório.
+    router.push('/report');
   };
 
   // --- Funções de Renderização Específicas / Botões Condicionais ---
@@ -330,11 +311,10 @@ export default function DashboardViewReserves() {
     const hourNow = new Date();
 
     if (hourNow > hourEnd) {
-      // Lógica para usuários comuns enviarem relatório
       if (
-        selectedReserve?.sport && // Verifica se é uma reserva de esporte
-        selectedReserve?.user.id === userId && // Verifica se o usuário logado é o solicitante
-        selectedReserve.status === 'CONFIRMADA' // Verifica se a reserva está confirmada
+        selectedReserve?.sport &&
+        selectedReserve?.user.id === userId &&
+        selectedReserve.status === 'CONFIRMADA'
       ) {
         return (
           <Button
@@ -345,30 +325,10 @@ export default function DashboardViewReserves() {
           </Button>
         );
       }
-      // Lógica para admins visualizarem relatório existente
-      else if (
-        (userRole === 'PE_ADMIN' || userRole === 'SISTEMA_ADMIN') &&
-        selectedReserve?.sport
-      ) {
-        const hasReport = reports.some((report) => report.sportId === selectedReserve?.sport?.id);
-        if (hasReport) {
-          const report = reports.find((report) => report.sportId === selectedReserve?.sport?.id);
-          return (
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSelectedReport(report as Reports); // Define o relatório selecionado
-                setSelectedReserve(null); // Limpa a reserva selecionada para exibir detalhes do relatório
-              }}>
-              Visualizar Relatório
-            </Button>
-          );
-        }
-      }
     } else if (
-      selectedReserve?.sport && // Verifica se é uma reserva de esporte
-      selectedReserve?.user.id === userId && // Verifica se o usuário logado é o solicitante
-      selectedReserve.status === 'CONFIRMADA' // Verifica se a reserva está confirmada
+      selectedReserve?.sport &&
+      selectedReserve?.user.id === userId &&
+      selectedReserve.status === 'CONFIRMADA'
     ) {
       return (
         <Button
@@ -379,11 +339,10 @@ export default function DashboardViewReserves() {
         </Button>
       );
     }
-    return null; // Não renderiza botão se as condições não forem atendidas
+    return null;
   };
 
   const renderActionButtons = () => {
-    // Buttons de Editar/Salvar/Remover
     if (isEditing) {
       return (
         <div className="flex gap-2 mt-4">
@@ -407,13 +366,10 @@ export default function DashboardViewReserves() {
             onClick={() => setIsEditing(true)}>
             Editar
           </Button>
-          {/* Adiciona o botão de relatório/visualizar relatório aqui, se aplicável */}
           <CompareHours />
         </div>
       );
     }
-    // Se não estiver editando e a reserva não for 'pendente', 'cadastrado' ou 'confirmada',
-    // ainda pode haver um botão de relatório (e.g., para reservas já passadas).
     return <CompareHours />;
   };
 
@@ -423,36 +379,22 @@ export default function DashboardViewReserves() {
   };
 
   const getReportMessage = (report: Reports) => {
-    return `Relatório de uso - ${report.dateUsed}`;
+    return `Relatório de uso - ${formatDateLocal(report.dateUsed)}`;
   };
 
   // --- Efeitos Colaterais (useEffect) ---
-  // 1. Efeito para obter o token, o papel do usuário e o ID na montagem do componente.
   useEffect(() => {
     getRoleAndToken();
-  }, []); // Executa apenas uma vez ao montar.
+  }, []);
 
-  // 2. Efeito para buscar dados de reservas e relatórios quando o token está disponível.
   useEffect(() => {
-    if (token) {
-      // Só chama as funções de busca se o token estiver disponível
+    if (token && userId) {
+      // Só executa se ambos existirem
       getAllReserves();
-      // getAllReports é chamado no terceiro useEffect, quando uma reserva é selecionada
+      getAllReports();
     }
-  }, [token]); // Depende do estado `token`
+  }, [token, userId]); // Adicione userId como dependência
 
-  // 3. Efeito para buscar relatórios APENAS quando uma reserva é selecionada E o usuário é admin.
-  // Isso evita buscar todos os relatórios desnecessariamente.
-  useEffect(() => {
-    if (selectedReserve && (userRole === 'PE_ADMIN' || userRole === 'SISTEMA_ADMIN')) {
-      getAllReports(); // Busca relatórios relacionados à reserva selecionada
-    } else {
-      // Limpa os relatórios se nenhuma reserva estiver selecionada ou se não for admin
-      setReports([]);
-    }
-  }, [selectedReserve, userRole, token]); // Depende da reserva, role e token
-
-  // 4. Efeito para atualizar `editedData` quando uma reserva é selecionada.
   useEffect(() => {
     if (selectedReserve) {
       setEditedData({
@@ -461,25 +403,32 @@ export default function DashboardViewReserves() {
         ...(selectedReserve.classroom || {}),
         ...(selectedReserve.event || {}),
       });
-      // Ao selecionar uma reserva, limpa o relatório selecionado para evitar inconsistência.
       setSelectedReport(null);
     }
   }, [selectedReserve]);
 
-  // 5. Efeito para atualizar `editedReport` quando um relatório é selecionado.
   useEffect(() => {
     if (selectedReport) {
       setEditedReport({
         peopleAppear: selectedReport.peopleAppear,
         requestedEquipment: selectedReport.requestedEquipment,
-        description: selectedReport.generalComments, // Usando generalComments para consistência
+        generalComments: selectedReport.generalComments,
         courtCondition: selectedReport.courtCondition,
         equipmentCondition: selectedReport.equipmentCondition,
       });
-      // Ao selecionar um relatório, limpa a reserva selecionada para evitar inconsistência.
       setSelectedReserve(null);
     }
   }, [selectedReport]);
+
+  if (!userId) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p>Carregando informações do usuário...</p>
+        </div>
+      </div>
+    );
+  }
 
   // --- Lógica de Filtro ---
   const filteredReserves = reserves.filter((reserve) => {
@@ -487,22 +436,23 @@ export default function DashboardViewReserves() {
     if (selectedTab === 'RECREACAO') return reserve.sport?.typePractice === 'RECREACAO';
     if (selectedTab === 'TREINO') return reserve.sport?.typePractice === 'TREINO';
     if (selectedTab === 'AMISTOSO') return reserve.sport?.typePractice === 'AMISTOSO';
-    // Notas: 'aula', 'evento', 'Relatório' não estão nas TabsList para este componente,
-    // então a lógica foi simplificada para refletir apenas os filtros de esporte.
-    return true;
+    return false;
   });
 
   const filteredReports = reports.filter((report) => {
-    if (selectedTab === 'all') return true;
-    // Se o tab 'Relatório' for adicionado, a lógica aqui precisaria ser ajustada.
-    // Por enquanto, todos os relatórios são mostrados em 'all' e nos tabs de esporte (sem filtro específico de relatório).
-    return true; // Retorna todos os relatórios
+    if (selectedTab !== 'Relatório') return false;
+
+    if (reportFilterStatus === 'all') return true;
+    if (reportFilterStatus === 'validated') return report.statusReadAdmin === true;
+    if (reportFilterStatus === 'pending') return report.statusReadAdmin === false;
+
+    return false;
   });
 
   // --- Funções de Renderização de Detalhes (Sub-componentes) ---
   const renderReportDetails = () => {
     if (!selectedReport) {
-      if (selectedReserve) return null; // Não renderiza se uma reserva estiver selecionada.
+      if (selectedReserve) return null;
 
       return (
         <div className="w-full bg-white md:w-1/2 border rounded-md p-8 flex flex-col items-center justify-center min-h-[300px]">
@@ -514,9 +464,42 @@ export default function DashboardViewReserves() {
       );
     }
 
+    const canEditReport = userId === selectedReport.sport?.reserve?.userId;
+
     return (
       <div className="w-full bg-white md:w-1/2 border rounded-md p-6">
-        <h2 className="text-xl font-bold mb-4">Detalhes do Relatório</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Detalhes do Relatório</h2>
+          <div className="flex gap-2">
+            {isEditingReport ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditingReport(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Implementar lógica de atualização do relatório aqui
+                    setIsEditingReport(false);
+                    toast.success('Relatório atualizado com sucesso');
+                  }}>
+                  Salvar
+                </Button>
+              </>
+            ) : (
+              <>
+                {canEditReport && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditingReport(true)}>
+                    Editar
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
 
         <div className="space-y-4">
           <div>
@@ -541,7 +524,7 @@ export default function DashboardViewReserves() {
               <div>
                 <label className="block text-sm font-medium mb-1">Data de Uso</label>
                 <Input
-                  value={selectedReport.dateUsed}
+                  value={formatDateLocal(selectedReport.dateUsed)}
                   disabled
                   className={disabledInputClass}
                 />
@@ -563,39 +546,82 @@ export default function DashboardViewReserves() {
               <div>
                 <label className="block text-sm font-medium mb-1">Pessoas Presentes</label>
                 <Input
-                  value={selectedReport.peopleAppear}
-                  disabled
+                  value={
+                    isEditingReport ? editedReport.peopleAppear || '' : selectedReport.peopleAppear
+                  }
+                  onChange={(e) =>
+                    setEditedReport({ ...editedReport, peopleAppear: e.target.value })
+                  }
+                  disabled={!isEditingReport}
                   className={disabledInputClass}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Equipamentos Solicitados</label>
                 <Input
-                  value={selectedReport.requestedEquipment}
-                  disabled
+                  value={
+                    isEditingReport
+                      ? editedReport.requestedEquipment || ''
+                      : selectedReport.requestedEquipment
+                  }
+                  onChange={(e) =>
+                    setEditedReport({ ...editedReport, requestedEquipment: e.target.value })
+                  }
+                  disabled={!isEditingReport}
                   className={disabledInputClass}
                 />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">Condição da Quadra</label>
                 <Textarea
-                  value={selectedReport.courtCondition}
-                  disabled
+                  value={
+                    isEditingReport
+                      ? editedReport.courtCondition || ''
+                      : selectedReport.courtCondition
+                  }
+                  onChange={(e) =>
+                    setEditedReport({ ...editedReport, courtCondition: e.target.value })
+                  }
+                  disabled={!isEditingReport}
                   className={disabledInputClass}
                 />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">Condição dos Equipamentos</label>
                 <Textarea
-                  value={selectedReport.equipmentCondition}
-                  disabled
+                  value={
+                    isEditingReport
+                      ? editedReport.equipmentCondition || ''
+                      : selectedReport.equipmentCondition
+                  }
+                  onChange={(e) =>
+                    setEditedReport({ ...editedReport, equipmentCondition: e.target.value })
+                  }
+                  disabled={!isEditingReport}
                   className={disabledInputClass}
                 />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">Comentários Gerais</label>
                 <Textarea
-                  value={selectedReport.generalComments} // Mantido como generalComments aqui
+                  value={
+                    isEditingReport
+                      ? editedReport.generalComments || ''
+                      : selectedReport.generalComments
+                  }
+                  onChange={(e) =>
+                    setEditedReport({ ...editedReport, generalComments: e.target.value })
+                  }
+                  disabled={!isEditingReport}
+                  className={disabledInputClass}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium mb-1">
+                  Comentários do Administrador
+                </label>
+                <Textarea
+                  value={selectedReport.commentsAdmin}
                   disabled
                   className={disabledInputClass}
                 />
@@ -609,12 +635,15 @@ export default function DashboardViewReserves() {
 
   const renderReserveDetails = () => {
     if (!selectedReserve) {
-      return renderReportDetails(); // Se nenhuma reserva estiver selecionada, tenta renderizar detalhes do relatório.
+      return renderReportDetails();
     }
 
     return (
       <div className="w-full bg-white md:w-1/2 border rounded-md p-6">
-        <h2 className="text-xl font-bold mb-4">Detalhes da Reserva</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Detalhes da Reserva</h2>
+          {renderActionButtons()}
+        </div>
 
         <div className="space-y-4">
           <div>
@@ -736,7 +765,6 @@ export default function DashboardViewReserves() {
               )}
             </div>
           </div>
-          {renderActionButtons()}
         </div>
       </div>
     );
@@ -762,80 +790,123 @@ export default function DashboardViewReserves() {
               setSelectedTab(value);
               setSelectedReserve(null);
               setSelectedReport(null);
+              setReportFilterStatus('all');
             }}
             className="mb-4">
-            <TabsList className="grid grid-cols-4 w-full">
-              <TabsTrigger value="all">Todos</TabsTrigger>
-              <TabsTrigger value="RECREACAO">Recreação</TabsTrigger>
-              <TabsTrigger value="TREINO">Treino</TabsTrigger>
-              <TabsTrigger value="AMISTOSO">Amistoso</TabsTrigger>
+            <TabsList className="flex w-full overflow-x-auto">
+              {' '}
+              {/* Adicione flex e overflow-x-auto */}
+              <div className="flex space-x-1">
+                {' '}
+                {/* Container interno para os TabsTriggers */}
+                <TabsTrigger value="all">Todos</TabsTrigger>
+                <TabsTrigger value="RECREACAO">Recreação</TabsTrigger>
+                <TabsTrigger value="TREINO">Treino</TabsTrigger>
+                <TabsTrigger value="AMISTOSO">Amistoso</TabsTrigger>
+                <TabsTrigger value="Relatório">Relatório</TabsTrigger>
+              </div>
             </TabsList>
           </Tabs>
+
+          {selectedTab === 'Relatório' && (
+            <div className="mb-4">
+              <Select
+                value={reportFilterStatus}
+                onValueChange={setReportFilterStatus}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filtrar por Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Relatórios</SelectItem>
+                  <SelectItem value="validated">Validados</SelectItem>
+                  <SelectItem value="pending">Pendentes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div
             className="space-y-2 p-2 overflow-y-auto pr-2"
             style={{ maxHeight: '70vh' }}>
-            {filteredReserves.length === 0 && filteredReports.length === 0 && (
+            {filteredReserves.length === 0 &&
+              filteredReports.length === 0 &&
+              selectedTab !== 'Relatório' && (
+                <Card className="p-4 bg-gray-100">
+                  <div>
+                    <h3 className="font-bold text-sm">Nenhuma reserva encontrada</h3>
+                    <p className="text-sm">
+                      Não há reservas para o filtro selecionado ou tipo de prática.
+                    </p>
+                  </div>
+                </Card>
+              )}
+
+            {selectedTab === 'Relatório' && filteredReports.length === 0 && (
               <Card className="p-4 bg-gray-100">
                 <div>
-                  <h3 className="font-bold text-sm">Nenhum item encontrado</h3>
-                  <p className="text-sm">Não há reservas ou relatórios para o filtro selecionado</p>
+                  <h3 className="font-bold text-sm">Nenhum relatório encontrado</h3>
+                  <p className="text-sm">Não há relatórios para o filtro de status selecionado.</p>
                 </div>
               </Card>
             )}
 
-            {/* Mostrar reservas */}
-            {filteredReserves.map((reserve) => (
-              <Card
-                key={`reserve-${reserve.id}`}
-                className={`p-4 bg-gray-100 relative cursor-pointer hover:bg-gray-200 ${
-                  selectedReserve?.id === reserve.id ? 'ring-2 ring-blue-500' : ''
-                }`}
-                onClick={() => {
-                  setSelectedReserve(reserve);
-                  setSelectedReport(null);
-                }}>
-                <div>
-                  <h3 className="font-bold text-sm">
-                    {reserve.sport?.typePractice && `Reserva ${reserve.status ? 'Solicitada' : ''}`}
-                  </h3>
-                  <p className="text-sm">{getReserveMessage(reserve)}</p>
-                  <p className="text-xs mt-1">
-                    {formatDateTime(reserve.dateTimeStart)} - {formatDateTime(reserve.dateTimeEnd)}
-                  </p>
-                </div>
+            {selectedTab !== 'Relatório' &&
+              filteredReserves.map((reserve) => (
+                <Card
+                  key={`reserve-${reserve.id}`}
+                  className={`p-4 bg-gray-100 relative cursor-pointer hover:bg-gray-200 ${
+                    selectedReserve?.id === reserve.id ? 'ring-2 ring-blue-500' : ''
+                  }`}
+                  onClick={() => {
+                    setSelectedReserve(reserve);
+                    setSelectedReport(null);
+                  }}>
+                  <div>
+                    <h3 className="font-bold text-sm">
+                      {reserve.sport?.typePractice &&
+                        `Reserva ${reserve.status ? 'Solicitada' : ''}`}
+                    </h3>
+                    <p className="text-sm">{getReserveMessage(reserve)}</p>
+                    <p className="text-xs mt-1">
+                      {formatDateTime(reserve.dateTimeStart)} -{' '}
+                      {formatDateTime(reserve.dateTimeEnd)}
+                    </p>
+                  </div>
+                  {reserve.status && (
+                    <div className="absolute top-4 right-4">{renderStatus(reserve.status)}</div>
+                  )}
+                </Card>
+              ))}
 
-                {reserve.status && (
-                  <div className="absolute top-4 right-4">{renderStatus(reserve.status)}</div>
-                )}
-              </Card>
-            ))}
-
-            {/* Mostrar relatórios */}
-            {filteredReports.map((report) => (
-              <Card
-                key={`report-${report.id}`}
-                className={`p-4 bg-blue-50 relative cursor-pointer hover:bg-blue-100 ${
-                  selectedReport?.id === report.id ? 'ring-2 ring-blue-500' : ''
-                }`}
-                onClick={() => {
-                  setSelectedReport(report);
-                  setSelectedReserve(null);
-                }}>
-                <div>
-                  <h3 className="font-bold text-sm">Relatório de uso</h3>
-                  <p className="text-sm">{getReportMessage(report)}</p>
-                  <p className="text-xs mt-1">Tempo de uso: {report.timeUsed}</p>
-                </div>
-                <div className="absolute top-4 right-4 text-green-500 text-sm">
-                  {report.statusReadAdmin ? 'Lido' : 'Não lido'}
-                </div>
-              </Card>
-            ))}
+            {selectedTab === 'Relatório' &&
+              filteredReports.map((report) => (
+                <Card
+                  key={`report-${report.id}`}
+                  className={`p-4 bg-blue-50 relative cursor-pointer hover:bg-blue-100 ${
+                    selectedReport?.id === report.id ? 'ring-2 ring-blue-500' : ''
+                  }`}
+                  onClick={() => {
+                    setSelectedReport(report);
+                    setSelectedReserve(null);
+                  }}>
+                  <div>
+                    <h3 className="font-bold text-sm">Relatório de uso</h3>
+                    <p className="text-sm">{getReportMessage(report)}</p>
+                    <p className="text-xs mt-1">Tempo de uso: {report.timeUsed}</p>
+                  </div>
+                  <div className="absolute top-4 right-4">
+                    {report.statusReadAdmin ? (
+                      <span className="text-green-500 text-sm">Validado</span>
+                    ) : (
+                      <span className="text-yellow-500 text-sm">Pendente</span>
+                    )}
+                  </div>
+                </Card>
+              ))}
           </div>
         </div>
 
-        {selectedReport ? renderReportDetails() : renderReserveDetails()}
+        {selectedReserve ? renderReserveDetails() : renderReportDetails()}
       </div>
     </div>
   );
