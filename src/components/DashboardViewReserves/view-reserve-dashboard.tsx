@@ -98,7 +98,6 @@ export default function DashboardViewReserves() {
   const [editedData, setEditedData] = useState<any>({});
   const [isLoading, setIsLoading] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Reports | null>(null);
-  const [userRole, setUserRole] = useState<Role | null>();
   const { setReportData } = useReport();
   const [userId, setUserId] = useState('');
   const [token, setToken] = useState<string | null>(null);
@@ -122,7 +121,6 @@ export default function DashboardViewReserves() {
       setToken(storedToken);
       const decoded = jwtDecode<JwtPayload>(storedToken);
       console.log(decoded);
-      setUserRole(decoded.role as Role);
       setUserId(decoded.id);
     } catch (error: any) {
       console.error('Error decoding token:', error);

@@ -134,12 +134,13 @@ const NavbarPrivate = ({ Role }: NavbarPrivateProps) => {
           path="/home"
           label="Início"
         />
-        <NavButton
-          icon={History}
-          path="/view-reserves"
-          label="Minhas Reservas"
-        />{' '}
-        {/* Mudado para "Minhas Reservas" por clareza */}
+        {Role === 'USER' && (
+          <NavButton
+            icon={History}
+            path="/view-reserves"
+            label="Minhas Reservas"
+          />
+        )}
         {/* Botões de Gerenciamento de Reservas (apenas Admins) */}
         {(Role === 'PE_ADMIN' || Role === 'SISTEMA_ADMIN') && (
           <NavButton

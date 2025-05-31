@@ -9,7 +9,7 @@ import { api } from '@/app/server/api'; // Importa a instância pré-configurada
  */
 export async function getReserves(formData: FormData): Promise<any | { error: string }> {
   try {
-    const token = formData.get('token'); // Obtém o token da FormData.
+    const token = formData.get('token');
 
     if (!token) {
       return { error: 'Token de autenticação ausente.' };

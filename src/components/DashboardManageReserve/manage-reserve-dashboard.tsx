@@ -874,23 +874,23 @@ export default function DashboardManageReserve() {
                     />
                   </div>
                 )}
-                {editedData.participants && (
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Participantes</label>
-                    <Input
-                      value={editedData.participants || ''}
-                      onChange={(e) => handleInputChange('participants', e.target.value)}
-                      disabled={!isEditing}
-                      className={disabledInputClass}
-                    />
-                  </div>
-                )}
                 {editedData.requestEquipment && (
                   <div>
                     <label className="block text-sm font-medium mb-1">Equipamentos</label>
                     <Input
                       value={editedData.requestEquipment || ''}
                       onChange={(e) => handleInputChange('requestEquipment', e.target.value)}
+                      disabled={!isEditing}
+                      className={disabledInputClass}
+                    />
+                  </div>
+                )}
+                {editedData.participants && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Participantes</label>
+                    <Textarea
+                      value={editedData.participants || ''}
+                      onChange={(e) => handleInputChange('participants', e.target.value)}
                       disabled={!isEditing}
                       className={disabledInputClass}
                     />

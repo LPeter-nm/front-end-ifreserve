@@ -1,7 +1,7 @@
 'use client'; // Indica que este é um componente cliente
 
 // --- Importações de Bibliotecas e Componentes ---
-import React, { useState } from 'react'; // React e hooks básicos
+import React, { useState, useEffect } from 'react'; // React e hooks básicos, incluindo useEffect
 import { useRouter } from 'next/navigation'; // Hook para navegação
 import { useForm } from 'react-hook-form'; // Para gerenciamento de formulários
 import { zodResolver } from '@hookform/resolvers/zod'; // Integrar Zod com React Hook Form
@@ -9,7 +9,7 @@ import { z } from 'zod'; // Para validação de esquema
 import toast from 'react-hot-toast'; // Para exibir notificações (toasts)
 
 // Componentes de UI locais
-import { Card, CardContent } from '@/components/ui/card'; // Corrigido o caminho de importação
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -17,26 +17,25 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'; // Corrigido o caminho de importação
-import { Label } from '@/components/ui/label'; // Adicionado, pois Label é uma boa prática para inputs
-import { Textarea } from '@/components/ui/textarea'; // Adicionado para o campo 'participants'
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 // --- Ações de API (Server Action) ---
-import { handleSubmit as submitFormData } from './action'; // Server Action para submeter a reserva esportiva
+import { handleSubmit as submitFormData } from './action';
 
 // --- Constantes de Validação ---
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB em bytes.
 const ACCEPTED_FILE_TYPES = ['application/pdf']; // Apenas PDFs.
 
 // --- Esquema de Validação (Zod) ---
-// Define o esquema de validação para os campos do formulário de reserva esportiva.
 const formSchema = z.object({
   typePractice: z.enum(['TREINO', 'AMISTOSO', 'RECREACAO'], {
     message: 'O tipo de prática é obrigatório.',
   }),
-  numberParticipants: z.string().min(1, { message: 'O número de participantes é obrigatório.' }), // Adicionado .min(1)
-  participants: z.string().min(1, { message: 'A lista de participantes é obrigatória.' }), // Adicionado .min(1)
-  requestEquipment: z.string().optional(), // Opcional, não precisa de min(1) se não for obrigatório
+  numberParticipants: z.string().min(1, { message: 'O número de participantes é obrigatório.' }),
+  participants: z.string().min(1, { message: 'A lista de participantes é obrigatória.' }),
+  requestEquipment: z.string().optional(),
   occurrence: z.enum(['SEMANALMENTE', 'EVENTO_UNICO'], { message: 'A ocorrência é obrigatória.' }),
   dateTimeStart: z.string().min(1, { message: 'A data e hora de início são obrigatórias.' }),
   dateTimeEnd: z.string().min(1, { message: 'A data e hora de término são obrigatórias.' }),
@@ -50,23 +49,20 @@ const formSchema = z.object({
       (file) => !file || ACCEPTED_FILE_TYPES.includes(file.type),
       'Apenas arquivos PDF são permitidos.'
     )
-    .optional(), // O campo é opcional
+    .optional(),
 });
 
 // --- Tipos de Dados ---
-// Define o tipo inferido do esquema de validação para os dados do formulário.
 type ReserveSportFormValues = z.infer<typeof formSchema>;
 
 // --- Funções Utilitárias / Formatadores ---
-// Função para formatar uma string de data para o formato "dd/mm/yyyy, hh:mm".
 const formatToDDMMYYYYHHMM = (dateString: string): string => {
   if (!dateString) return '';
   const date = new Date(dateString);
 
   if (isNaN(date.getTime())) {
-    // Verifica se a data é inválida
     console.error('Data inválida fornecida para formatToDDMMYYYYHHMM:', dateString);
-    return dateString; // Retorna a string original para não quebrar.
+    return dateString;
   }
 
   const day = date.getDate().toString().padStart(2, '0');
@@ -80,56 +76,71 @@ const formatToDDMMYYYYHHMM = (dateString: string): string => {
 // --- Componente Principal ---
 export const ReserveSportForm = () => {
   // --- Estados do Componente ---
-  const [isSubmitting, setIsSubmitting] = useState(false); // Controla o estado de carregamento do formulário.
-  const [file, setFile] = useState<File | null>(null); // Armazena o arquivo PDF selecionado.
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
 
   // --- Hooks de Navegação e Formulário ---
-  const router = useRouter(); // Instancia o roteador para navegação programática.
+  const router = useRouter();
 
-  // Configura o `react-hook-form` com o resolver Zod para validação.
   const {
-    register, // Função para registrar inputs no formulário.
-    handleSubmit: formHandleSubmit, // Função para lidar com a submissão do formulário.
-    setValue, // Função para definir o valor de um campo do formulário programaticamente.
-    formState: { errors }, // Objeto que contém os erros de validação.
+    register,
+    handleSubmit: formHandleSubmit,
+    setValue,
+    watch, // Adicionado watch para observar o campo numberParticipants
+    formState: { errors },
   } = useForm<ReserveSportFormValues>({
-    resolver: zodResolver(formSchema), // Conecta o Zod como resolvedor de validação.
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      // Define valores padrão para os campos do formulário.
       numberParticipants: '',
       participants: '',
       requestEquipment: '',
       dateTimeStart: '',
       dateTimeEnd: '',
       occurrence: 'SEMANALMENTE',
-      typePractice: undefined, // undefined para placeholder aparecer
+      typePractice: undefined,
     },
   });
 
+  // Observa o valor de 'numberParticipants'
+  const watchedNumberParticipants = watch('numberParticipants');
+
+  // --- Efeito para gerar a lista de participantes ---
+  // Este useEffect será executado sempre que 'watchedNumberParticipants' mudar.
+  useEffect(() => {
+    const num = parseInt(watchedNumberParticipants, 10);
+    // Verifica se o número é válido (maior que zero e não é NaN)
+    if (num > 0 && !isNaN(num)) {
+      let participantList = '';
+      for (let i = 1; i <= num; i++) {
+        participantList += `${i}.\n`; // Adiciona a sequência numérica e quebra de linha
+      }
+      setValue('participants', participantList); // Preenche o campo 'participants'
+    } else if (watchedNumberParticipants === '') {
+      setValue('participants', ''); // Limpa o campo se o número for vazio
+    }
+  }, [watchedNumberParticipants, setValue]); // Dependências do useEffect
+
   // --- Handlers de Arquivo ---
-  // Lida com a seleção de arquivos (PDF).
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
 
-      // Validação de tamanho do arquivo.
       if (selectedFile.size > MAX_FILE_SIZE) {
         toast.error(`O arquivo deve ser menor que ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
-        e.target.value = ''; // Limpa o input file.
+        e.target.value = '';
         setFile(null);
         setValue('pdfFile', null);
         return;
       }
-      // Validação do tipo de arquivo.
       if (!ACCEPTED_FILE_TYPES.includes(selectedFile.type)) {
         toast.error('Apenas arquivos PDF são permitidos.');
-        e.target.value = ''; // Limpa o input file.
+        e.target.value = '';
         setFile(null);
         setValue('pdfFile', null);
         return;
       }
-      setFile(selectedFile); // Armazena o arquivo no estado local.
-      setValue('pdfFile', selectedFile); // Define o valor do campo no React Hook Form.
+      setFile(selectedFile);
+      setValue('pdfFile', selectedFile);
     } else {
       setFile(null);
       setValue('pdfFile', null);
@@ -137,22 +148,19 @@ export const ReserveSportForm = () => {
   };
 
   // --- Handlers de Interação do Usuário ---
-  // Função executada quando o formulário é submetido com sucesso.
   async function onSubmit(values: ReserveSportFormValues) {
-    setIsSubmitting(true); // Ativa o estado de carregamento.
+    setIsSubmitting(true);
     console.log('Valores do formulário no submit:', JSON.stringify(values, null, 2));
 
     try {
-      // Obtém o token do localStorage (acesso seguro no cliente).
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (!token) {
         toast.error('Sessão expirada. Por favor, faça login novamente.');
         setIsSubmitting(false);
-        router.push('/login'); // Redireciona para o login.
+        router.push('/login');
         return;
       }
 
-      // Validação de datas: data de término deve ser após a de início.
       const startDate = new Date(values.dateTimeStart);
       const endDate = new Date(values.dateTimeEnd);
       if (startDate >= endDate) {
@@ -161,80 +169,62 @@ export const ReserveSportForm = () => {
         return;
       }
 
-      // Cria um objeto FormData para enviar os dados para a Server Action.
       const formData = new FormData();
       formData.append('token', token);
       formData.append('typePractice', values.typePractice);
       formData.append('numberParticipants', values.numberParticipants);
       formData.append('participants', values.participants);
-      formData.append('requestEquipment', values.requestEquipment || ''); // Garante string vazia se undefined.
+      formData.append('requestEquipment', values.requestEquipment || '');
       formData.append('occurrence', values.occurrence);
       formData.append('dateTimeStart', formatToDDMMYYYYHHMM(values.dateTimeStart));
       formData.append('dateTimeEnd', formatToDDMMYYYYHHMM(values.dateTimeEnd));
 
       if (file) {
-        formData.append('pdfFile', file); // Anexa o arquivo PDF se um foi selecionado.
+        formData.append('pdfFile', file);
       }
 
-      // Log para depuração dos dados que estão sendo enviados no FormData.
       console.log('Dados do FormData:');
       for (let [key, value] of formData.entries()) {
         console.log(`${key}:`, value);
       }
 
-      const result = await submitFormData(formData); // Chama a Server Action.
+      const result = await submitFormData(formData);
       console.log('Resultado da Server Action:', result);
 
       if (result?.error) {
-        toast.error(result.error); // Exibe erro retornado pela Server Action.
+        toast.error(result.error);
       } else if (result?.success) {
-        toast.success(result.message || 'Solicitação de reserva enviada com sucesso!'); // Exibe mensagem de sucesso.
-        // Redireciona para a home após um pequeno atraso.
+        toast.success(result.message || 'Solicitação de reserva enviada com sucesso!');
         setTimeout(() => router.push('/home'), 2000);
       } else {
-        toast.error('Resposta inesperada do servidor ao enviar solicitação.'); // Caso a resposta não seja sucesso nem erro.
+        toast.error('Resposta inesperada do servidor ao enviar solicitação.');
       }
     } catch (error) {
-      // Captura erros gerais na chamada da Server Action.
       console.error('Erro no onSubmit da reserva esportiva:', error);
       toast.error('Ocorreu um erro ao enviar sua solicitação de reserva.');
     } finally {
-      setIsSubmitting(false); // Desativa o estado de carregamento, mesmo em caso de erro.
+      setIsSubmitting(false);
     }
   }
 
-  // Função para redirecionar de volta para a página inicial.
   const handleBackHome = () => {
-    router.push('/home'); // Redireciona para a home.
+    router.push('/home');
   };
 
   // --- JSX Principal ---
   return (
     <div className="p-5">
-      {' '}
-      {/* Padding geral */}
       <Card className="bg-[#ebe2e2] border border-black pb-0">
-        {' '}
-        {/* Adicionado 'border' para visibilidade */}
         <CardContent>
           <form onSubmit={formHandleSubmit(onSubmit)}>
-            {' '}
-            {/* Conecta o onSubmit do React Hook Form. */}
             <div className="flex flex-col gap-4">
-              {/* Seção Tipo de Reserva e Número de Participantes */}
-              <div className="flex flex-wrap gap-x-10 gap-y-4 justify-between w-full">
-                {' '}
-                {/* Usado flex-wrap para responsividade */}
+              <div className="flex flex-wrap gap-x-4 gap-y-4 justify-between w-full">
                 <div className="grid gap-2 flex-1 min-w-[200px]">
-                  {' '}
-                  {/* Flex-1 para preencher espaço */}
                   <Label htmlFor="typePractice">Tipo de reserva*</Label>
                   <Select
                     onValueChange={(value) => {
                       setValue('typePractice', value as 'TREINO' | 'AMISTOSO' | 'RECREACAO');
-                    }}
-                    // defaultValue={getValues('typePractice')} // Opcional: para controlar o Select com RHF
-                  >
+                    }}>
                     <SelectTrigger
                       id="typePractice"
                       className="flex cursor-pointer items-center justify-between text-start px-3 py-2 rounded bg-white text-black border border-gray-300">
@@ -260,7 +250,6 @@ export const ReserveSportForm = () => {
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                  {/* Mensagem de erro para typePractice: use ?.message */}
                   {errors.typePractice?.message && (
                     <p className="text-red-500 text-sm mt-1">{errors.typePractice.message}</p>
                   )}
@@ -275,14 +264,12 @@ export const ReserveSportForm = () => {
                     required
                     {...register('numberParticipants')}
                   />
-                  {/* Mensagem de erro para numberParticipants: use ?.message */}
                   {errors.numberParticipants?.message && (
                     <p className="text-red-500 text-sm mt-1">{errors.numberParticipants.message}</p>
                   )}
                 </div>
               </div>
 
-              {/* Seção Equipamentos e Ocorrência / Lista de Participantes */}
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex flex-col gap-4 md:w-1/2">
                   <div className="grid gap-2">
@@ -294,7 +281,6 @@ export const ReserveSportForm = () => {
                       placeholder="Ex: Bola de vôlei, rede de badminton"
                       {...register('requestEquipment')}
                     />
-                    {/* Mensagem de erro para requestEquipment: use ?.message */}
                     {errors.requestEquipment?.message && (
                       <p className="text-red-500 text-sm mt-1">{errors.requestEquipment.message}</p>
                     )}
@@ -326,10 +312,37 @@ export const ReserveSportForm = () => {
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                    {/* Mensagem de erro para occurrence: use ?.message */}
                     {errors.occurrence?.message && (
                       <p className="text-red-500 text-sm mt-1">{errors.occurrence.message}</p>
                     )}
+                  </div>
+                  <div className="flex flex-col md:flex-row gap-20">
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="dateTimeStart">Data e Hora inicial*</Label>
+                      <Input
+                        id="dateTimeStart"
+                        type="datetime-local"
+                        className="bg-white rounded"
+                        required
+                        {...register('dateTimeStart')}
+                      />
+                      {errors.dateTimeStart?.message && (
+                        <p className="text-red-500 text-sm mt-1">{errors.dateTimeStart.message}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="dateTimeEnd">Data e Hora final*</Label>
+                      <Input
+                        id="dateTimeEnd"
+                        type="datetime-local"
+                        className=" bg-white rounded "
+                        required
+                        {...register('dateTimeEnd')}
+                      />
+                      {errors.dateTimeEnd?.message && (
+                        <p className="text-red-500 text-sm mt-1">{errors.dateTimeEnd.message}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -338,50 +351,16 @@ export const ReserveSportForm = () => {
                   <Textarea
                     id="participants"
                     className="bg-white rounded px-3 py-2 h-44"
-                    placeholder="Ex: Fulano nome - matrícula ou CPF&#10;Ciclano nome - matrícula ou CPF"
+                    placeholder="Ex: 1. Fulano nome - matrícula ou CPF"
                     required
                     {...register('participants')}
                   />
-                  {/* Mensagem de erro para participants: use ?.message */}
                   {errors.participants?.message && (
                     <p className="text-red-500 text-sm mt-1">{errors.participants.message}</p>
                   )}
                 </div>
               </div>
 
-              {/* Seção Data e Hora */}
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex flex-col w-full md:w-1/2 gap-2">
-                  <Label htmlFor="dateTimeStart">Data e Hora inicial*</Label>
-                  <Input
-                    id="dateTimeStart"
-                    type="datetime-local"
-                    className="w-full"
-                    required
-                    {...register('dateTimeStart')}
-                  />
-                  {/* Mensagem de erro para dateTimeStart: use ?.message */}
-                  {errors.dateTimeStart?.message && (
-                    <p className="text-red-500 text-sm mt-1">{errors.dateTimeStart.message}</p>
-                  )}
-                </div>
-                <div className="flex flex-col w-full md:w-1/2 gap-2">
-                  <Label htmlFor="dateTimeEnd">Data e Hora final*</Label>
-                  <Input
-                    id="dateTimeEnd"
-                    type="datetime-local"
-                    className="w-full"
-                    required
-                    {...register('dateTimeEnd')}
-                  />
-                  {/* Mensagem de erro para dateTimeEnd: use ?.message */}
-                  {errors.dateTimeEnd?.message && (
-                    <p className="text-red-500 text-sm mt-1">{errors.dateTimeEnd.message}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Seção Anexar PDF */}
               <div className="grid gap-2 mt-4">
                 <Label htmlFor="pdfFile">Anexar PDF (Opcional)</Label>
                 <Input
@@ -389,7 +368,7 @@ export const ReserveSportForm = () => {
                   type="file"
                   accept=".pdf"
                   onChange={handleFileChange}
-                  className="bg-white rounded px-3 py-2 border border-gray-300"
+                  className="bg-white rounded px-3 border border-gray-300"
                 />
                 {file && (
                   <p className="text-sm text-gray-600">
@@ -401,7 +380,6 @@ export const ReserveSportForm = () => {
                 )}
               </div>
             </div>
-            {/* Rodapé do formulário (Botões de Ação) */}
             <div className="flex p-10 gap-4 justify-center">
               <button
                 type="button"

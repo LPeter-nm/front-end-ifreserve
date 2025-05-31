@@ -43,11 +43,7 @@ interface StudentTableContentProps {
 }
 
 // --- Componente Principal ---
-export default function StudentTableContent({
-  students,
-  loading,
-  totalStudents, // `totalStudents` não é usado neste componente, considere remover se não for necessário.
-}: StudentTableContentProps) {
+export default function StudentTableContent({ students, loading }: StudentTableContentProps) {
   // --- Estados do Componente ---
   // `isDeleteDialogOpen` controla a visibilidade do diálogo de confirmação de exclusão.
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -135,7 +131,7 @@ export default function StudentTableContent({
             <TableHead className="font-bold text-black w-1/3">Nome</TableHead>
             <TableHead className="font-bold text-black w-1/3">Email</TableHead>
             <TableHead className="font-bold text-black w-1/3">Matrícula</TableHead>
-            <TableHead className="w-[100px]"></TableHead> {/* Coluna de Ações */}
+            <TableHead className="w-[100px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -148,7 +144,6 @@ export default function StudentTableContent({
                 <TableCell>{student.user.email}</TableCell>
                 <TableCell>{student.user.identification}</TableCell>
                 <TableCell className="flex items-center space-x-1 justify-end">
-                  {/* Botão de Excluir */}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -157,7 +152,6 @@ export default function StudentTableContent({
                     title="Excluir aluno">
                     <Trash className="h-4 w-4" />
                   </Button>
-                  {/* Indicador de Status */}
                   <div className="px-2">{renderStatusIndicator(student.user.status)}</div>
                 </TableCell>
               </TableRow>

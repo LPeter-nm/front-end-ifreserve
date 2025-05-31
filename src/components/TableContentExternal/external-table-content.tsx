@@ -41,11 +41,7 @@ interface ExternalTableContentProps {
 }
 
 // --- Main Component ---
-export default function ExternalTableContent({
-  externals,
-  loading,
-  totalExternals, // `totalExternals` is not used in this component, consider removing if not needed.
-}: ExternalTableContentProps) {
+export default function ExternalTableContent({ externals, loading }: ExternalTableContentProps) {
   // --- Component States ---
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // Controls the visibility of the delete confirmation dialog.
   const [externalToDelete, setExternalToDelete] = useState<External | null>(null); // Stores the external user selected for deletion.
@@ -133,7 +129,7 @@ export default function ExternalTableContent({
             <TableHead className="font-bold text-black w-1/5">Documento</TableHead>
             <TableHead className="font-bold text-black w-1/5">Telefone</TableHead>
             <TableHead className="font-bold text-black w-1/5">Endereço</TableHead>
-            <TableHead className="w-[100px]"></TableHead> {/* Actions column */}
+            <TableHead className="w-[100px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -148,9 +144,7 @@ export default function ExternalTableContent({
                 <TableCell>{external.phone}</TableCell>
                 <TableCell>{external.address}</TableCell>
                 <TableCell className="flex items-center space-x-1 justify-end">
-                  {/* Status Indicator */}
                   <div className="px-2">{renderStatusIndicator(external.user.status)}</div>
-                  {/* Delete Button */}
                   <Button
                     variant="ghost"
                     size="icon"

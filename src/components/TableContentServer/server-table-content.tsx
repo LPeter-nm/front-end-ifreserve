@@ -44,11 +44,7 @@ interface ServerTableContentProps {
 }
 
 // --- Componente Principal ---
-export default function ServerTableContent({
-  servers,
-  loading,
-  totalServers, // `totalServers` não é usado neste componente, considere remover se não for necessário.
-}: ServerTableContentProps) {
+export default function ServerTableContent({ servers, loading }: ServerTableContentProps) {
   // --- Estados do Componente ---
   // `isDeleteDialogOpen` controla a visibilidade do diálogo de confirmação de exclusão.
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -138,7 +134,7 @@ export default function ServerTableContent({
             <TableHead className="font-bold text-black w-1/4">Email</TableHead>
             <TableHead className="font-bold text-black w-1/4">Matrícula</TableHead>
             <TableHead className="font-bold text-black w-1/4">Cargo</TableHead>
-            <TableHead className="w-[100px]"></TableHead> {/* Coluna de Ações */}
+            <TableHead className="w-[100px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -152,15 +148,6 @@ export default function ServerTableContent({
                 <TableCell>{server.user.identification}</TableCell>
                 <TableCell>{server.roleInInstitution}</TableCell>
                 <TableCell className="flex items-center space-x-1 justify-end">
-                  {/* Botão de Editar (funcionalidade a ser implementada) */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-blue-500 hover:bg-blue-100 hover:text-blue-700 transition-colors"
-                    title="Editar servidor">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  {/* Botão de Excluir */}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -169,7 +156,6 @@ export default function ServerTableContent({
                     title="Excluir servidor">
                     <Trash className="h-4 w-4" />
                   </Button>
-                  {/* Indicador de Status */}
                   <div className="px-2">{renderStatusIndicator(server.user.status)}</div>
                 </TableCell>
               </TableRow>
