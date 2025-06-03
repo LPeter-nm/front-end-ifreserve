@@ -50,6 +50,10 @@ interface Reserves {
     numberParticipants: number;
     participants: string;
     requestEquipment: string;
+    report: {
+      statusReadAdmin: boolean;
+      isSent: boolean;
+    };
   } | null;
   classroom: {
     course: string;
@@ -74,6 +78,7 @@ interface Reports {
   statusReadAdmin: boolean;
   timeUsed: string;
   dateUsed: string;
+  isSent: boolean;
   sportId: string;
   sport: {
     reserve: {
@@ -308,8 +313,23 @@ export default function DashboardViewReserves() {
     const hourEnd = new Date(selectedReserve?.dateTimeEnd || '');
     const hourNow = new Date();
 
-    if (hourNow > hourEnd) {
-      if (
+    if (!selectedReserve?.sport?.report?.isSent) {
+      if (hourNow > hourEnd) {
+        if (
+          selectedReserve?.sport &&
+          selectedReserve?.user.id === userId &&
+          selectedReserve.status === 'CONFIRMADA'
+        ) {
+          return (
+            <Button
+              variant="outline"
+              className="bg-[#2C2C2C] text-white"
+              onClick={handleReportForm}>
+              Enviar Relatório
+            </Button>
+          );
+        }
+      } else if (
         selectedReserve?.sport &&
         selectedReserve?.user.id === userId &&
         selectedReserve.status === 'CONFIRMADA'
@@ -317,25 +337,12 @@ export default function DashboardViewReserves() {
         return (
           <Button
             variant="outline"
-            className="bg-[#2C2C2C] text-white"
-            onClick={handleReportForm}>
+            disabled
+            className={disabledInputClass}>
             Enviar Relatório
           </Button>
         );
       }
-    } else if (
-      selectedReserve?.sport &&
-      selectedReserve?.user.id === userId &&
-      selectedReserve.status === 'CONFIRMADA'
-    ) {
-      return (
-        <Button
-          variant="outline"
-          disabled
-          className={disabledInputClass}>
-          Enviar Relatório
-        </Button>
-      );
     }
     return null;
   };
@@ -442,7 +449,7 @@ export default function DashboardViewReserves() {
 
     if (reportFilterStatus === 'all') return true;
     if (reportFilterStatus === 'validated') return report.statusReadAdmin === true;
-    if (reportFilterStatus === 'pending') return report.statusReadAdmin === false;
+    if (reportFilterStatus === 'sent') return report.isSent === true;
 
     return false;
   });
@@ -619,7 +626,7 @@ export default function DashboardViewReserves() {
                   Comentários do Administrador
                 </label>
                 <Textarea
-                  value={selectedReport.commentsAdmin}
+                  value={selectedReport.commentsAdmin || ''}
                   disabled
                   className={disabledInputClass}
                 />
@@ -744,7 +751,7 @@ export default function DashboardViewReserves() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Comentários (Recusa)</label>
                   <Textarea
-                    value={editedData.comments}
+                    value={editedData.comments || ''}
                     disabled
                     className={disabledInputClass}
                   />
@@ -755,7 +762,7 @@ export default function DashboardViewReserves() {
                   <label className="block text-sm font-medium mb-1">Atualizado por:</label>
                   <Input
                     type="text"
-                    value={editedData.answeredBy}
+                    value={editedData.answeredBy || ''}
                     disabled
                     className={disabledInputClass}
                   />
@@ -817,7 +824,7 @@ export default function DashboardViewReserves() {
                 <SelectContent>
                   <SelectItem value="all">Todos os Relatórios</SelectItem>
                   <SelectItem value="validated">Validados</SelectItem>
-                  <SelectItem value="pending">Pendentes</SelectItem>
+                  <SelectItem value="sent">Enviados</SelectItem>
                 </SelectContent>
               </Select>
             </div>

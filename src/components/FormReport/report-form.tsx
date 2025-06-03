@@ -120,7 +120,10 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
   }
 
   // Função para redirecionar de volta para a página inicial.
-  const handleBackHome = () => router.push('/home');
+  const handleBackHome = () => router.push('/view-reserves');
+
+  const disabledInputClass =
+    'disabled:bg-gray-200 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed rounded p-2';
 
   // --- JSX Principal ---
   return (
@@ -140,12 +143,12 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
                 <div className="grid gap-2 w-full">
                   <label
                     htmlFor="nameUser"
-                    className="font-medium text-gray-700">
+                    className="font-medium text-sm mb-1">
                     Solicitante
                   </label>
                   <input
                     id="nameUser"
-                    className="bg-white disabled:bg-gray-200 rounded px-3 py-2 text-gray-800"
+                    className={disabledInputClass}
                     value={userName}
                     disabled
                   />
@@ -153,12 +156,12 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
                 <div className="grid gap-2 w-full">
                   <label
                     htmlFor="timeUsed"
-                    className="font-medium text-gray-700">
+                    className="font-medium text-sm mb-1">
                     Horário
                   </label>
                   <input
                     id="timeUsed"
-                    className="bg-white disabled:bg-gray-200 rounded px-3 py-2 text-gray-800"
+                    className={disabledInputClass}
                     value={timeUsed}
                     disabled
                   />
@@ -166,12 +169,12 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
                 <div className="grid gap-2 w-full">
                   <label
                     htmlFor="dateUsed"
-                    className="font-medium text-gray-700">
+                    className="font-medium text-sm mb-1">
                     Data
                   </label>
                   <input
                     id="dateUsed"
-                    className="bg-white disabled:bg-gray-200 rounded px-3 py-2 text-gray-800"
+                    className={disabledInputClass}
                     value={formatDate(date)} // Exibe a data formatada
                     disabled
                   />
@@ -185,7 +188,7 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
                 <div className="grid gap-2 w-full">
                   <label
                     htmlFor="requestedEquipment"
-                    className="font-medium text-gray-700">
+                    className="font-medium text-sm mb-1">
                     Equipamentos solicitados
                   </label>
                   <input
@@ -193,6 +196,7 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
                     className={`bg-white rounded h-10 px-3 py-2 ${
                       errors.requestedEquipment ? 'border-red-500 border' : '' // Adicionado 'border'
                     }`}
+                    placeholder="Digite os equipamentos que foram solicitados na reserva"
                     {...register('requestedEquipment')}
                   />
                   {errors.requestedEquipment && (
@@ -204,7 +208,7 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
               <div className="grid gap-2">
                 <label
                   htmlFor="peopleAppear"
-                  className="font-medium text-gray-700">
+                  className="font-medium text-sm mb-1">
                   Participantes
                 </label>
                 <textarea
@@ -212,6 +216,7 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
                   className={`bg-white rounded w-full px-3 py-2 ${
                     errors.peopleAppear ? 'border-red-500 border' : ''
                   }`}
+                  placeholder="Digite o nome dos participantes que compareceram no momento da reserva"
                   {...register('peopleAppear')}
                 />
                 {errors.peopleAppear && (
@@ -223,7 +228,7 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
                 <div className="grid gap-2 w-full">
                   <label
                     htmlFor="courtCondition"
-                    className="font-medium text-gray-700">
+                    className="font-medium text-sm mb-1">
                     Condição da quadra
                   </label>
                   <textarea
@@ -232,6 +237,7 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
                       // Altura fixa para textareas
                       errors.courtCondition ? 'border-red-500 border' : ''
                     }`}
+                    placeholder="Digite qual era a condição da quadra"
                     {...register('courtCondition')}
                   />
                   {errors.courtCondition && (
@@ -242,7 +248,7 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
                 <div className="grid gap-2 w-full">
                   <label
                     htmlFor="equipmentCondition"
-                    className="font-medium text-gray-700">
+                    className="font-medium text-sm mb-1">
                     Condição dos equipamentos
                   </label>
                   <textarea
@@ -251,6 +257,7 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
                       // Altura fixa
                       errors.equipmentCondition ? 'border-red-500 border' : ''
                     }`}
+                    placeholder="Digite a condição dos equipamentos"
                     {...register('equipmentCondition')}
                   />
                   {errors.equipmentCondition && (
@@ -262,7 +269,7 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
               <div className="grid gap-2">
                 <label
                   htmlFor="generalComments"
-                  className="font-medium text-gray-700">
+                  className="font-medium text-sm mb-1">
                   Comentários gerais
                 </label>
                 <textarea
@@ -271,6 +278,7 @@ const ReportForm = ({ sportId, date, timeUsed, userName }: ReportFormParams) => 
                     // Altura fixa
                     errors.generalComments ? 'border-red-500 border' : ''
                   }`}
+                  placeholder="Digite um comentário sobre a reserva"
                   {...register('generalComments')}
                 />
                 {errors.generalComments && (

@@ -53,19 +53,14 @@ export async function getReserves(formData: FormData): Promise<any | { error: st
 export async function getReports(formData: FormData): Promise<any | { error: string }> {
   try {
     const token = formData.get('token'); // Obtém o token da FormData.
-    const userId = formData.get('userId'); // Obtém o ID do usuário da FormData.
 
     if (!token) {
       return { error: 'Token de autenticação ausente.' };
     }
 
-    if (!userId) {
-      return { error: 'ID do usuário ausente para buscar relatórios.' };
-    }
-
     // Realiza uma requisição GET para o endpoint de relatórios do usuário.
     // O ID do usuário é parte da URL da rota (ex: 'report/reports/123').
-    const response = await api.get(`report/reports/${userId}`, {
+    const response = await api.get(`report/reports-user`, {
       headers: {
         Authorization: `Bearer ${token}`, // O token é enviado no cabeçalho 'Authorization'.
       },
