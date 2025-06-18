@@ -232,14 +232,6 @@ export function CalendarEventDetails({ reserve }: CalendarEventDetailsProps) {
             className={disabledInputClass}
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-          <Input
-            value={data.status || ''}
-            disabled
-            className={disabledInputClass}
-          />
-        </div>
         {data.comments && ( // Exibe comentários apenas se existirem
           <div className="col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">

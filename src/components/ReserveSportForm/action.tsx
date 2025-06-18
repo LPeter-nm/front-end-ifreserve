@@ -64,8 +64,6 @@ export async function handleSubmit(formData: FormData): Promise<{
       console.log('PDF enviado com sucesso.');
     }
 
-    console.log('Resposta da API (solicitação inicial e upload):', response);
-
     return {
       success: true,
       message: response.data?.message || 'Reserva solicitada com sucesso!',

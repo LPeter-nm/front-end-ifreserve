@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form'; // Para gerenciamento de formulários
 import { zodResolver } from '@hookform/resolvers/zod'; // Integrar Zod com React Hook Form
 import { z } from 'zod'; // Para validação de esquema
 import { toast } from 'react-hot-toast'; // Para exibir notificações (toasts)
+import { Eye, EyeOff } from 'lucide-react'; // Ícones de olho para exibir/ocultar senha
 
 // Componentes de UI locais
 import { cn } from '@/lib/utils'; // Função utilitária para mesclar classes CSS
@@ -50,6 +51,8 @@ export function RegisterExternalForm({ className, ...props }: React.ComponentPro
   // --- Estados do Componente ---
   // `isSubmitting` controla o estado de carregamento durante a submissão do formulário.
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // `showPassword` controla a visibilidade da senha.
+  const [showPassword, setShowPassword] = useState(false); // Adicionado para visibilidade da senha
 
   // --- Hooks de Navegação e Formulário ---
   const router = useRouter(); // Instancia o roteador para navegação programática.
@@ -141,6 +144,11 @@ export function RegisterExternalForm({ className, ...props }: React.ComponentPro
     }
   }
 
+  // Função para alternar a visibilidade da senha.
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev); // Alterna o estado `showPassword`.
+  };
+
   // --- JSX Principal ---
   return (
     <div
@@ -228,14 +236,24 @@ export function RegisterExternalForm({ className, ...props }: React.ComponentPro
               {/* Campo de Senha */}
               <div className="grid gap-2">
                 <Label htmlFor="password">Senha</Label>
-                <Input
-                  className="bg-white text-black"
-                  placeholder="Digite sua senha"
-                  id="password"
-                  type="password"
-                  required
-                  {...register('password')}
-                />
+                <div className="relative">
+                  {' '}
+                  {/* Adicionado um contêiner relativo para posicionar o ícone */}
+                  <Input
+                    className="bg-white text-black pr-10" // Adiciona padding à direita para o ícone
+                    placeholder="Digite sua senha"
+                    id="password"
+                    type={showPassword ? 'text' : 'password'} // Alterna entre 'text' e 'password'
+                    required
+                    {...register('password')}
+                  />
+                  <button
+                    type="button" // Importante: para não submeter o formulário ao clicar no ícone
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    onClick={togglePasswordVisibility}>
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
                 {/* Exibe erro de validação para a senha. */}
                 {errors.password && (
                   <p className="text-red-500 text-sm">{errors.password.message}</p>

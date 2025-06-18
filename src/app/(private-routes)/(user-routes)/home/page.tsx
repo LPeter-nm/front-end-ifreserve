@@ -37,7 +37,7 @@ const HomePage = () => {
     // seja acessado apenas no lado do cliente.
     if (typeof window !== 'undefined') {
       try {
-        const token = localStorage.getItem('token');
+        let token = localStorage.getItem('token');
 
         if (!token) {
           // Se não há token, o usuário não está logado.

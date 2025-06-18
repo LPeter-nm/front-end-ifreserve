@@ -141,7 +141,7 @@ export function ClassroomReserveModal({ open, onOpenChange, role }: ClassroomRes
         toast.success(result?.message || 'Aula/reserva registrada com sucesso!'); // Exibe mensagem de sucesso.
         reset(); // Reseta o formulário para os valores padrão.
         onOpenChange(false); // Fecha o modal.
-        // Recarrega a página ou a parte do calendário para refletir a nova reserva.
+        window.location.reload();
         // `router.refresh()` é uma boa opção no Next.js App Router para revalidar dados.
         setTimeout(() => router.refresh(), 1000);
       }
@@ -167,13 +167,6 @@ export function ClassroomReserveModal({ open, onOpenChange, role }: ClassroomRes
           {/* Cabeçalho do Modal */}
           <div className="flex justify-between items-center p-4 pb-2">
             <DialogTitle className="text-xl font-bold">Registro de Aula/Reserva</DialogTitle>
-            {/* Botão de Fechar Modal */}
-            <button
-              type="button" // Essencial para não submeter o formulário.
-              onClick={() => onOpenChange(false)}
-              className="text-gray-500 hover:text-gray-700 transition-colors">
-              <X size={20} />
-            </button>
           </div>
 
           {/* Corpo do Formulário */}

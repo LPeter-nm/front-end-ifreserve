@@ -1,21 +1,17 @@
-'use client'; // Indica que este é um componente cliente
-
-// --- Importações de Bibliotecas e Componentes ---
-// Agrupando importações por tipo: bibliotecas externas, depois componentes internos.
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation'; // Hook para navegação
-import { useForm } from 'react-hook-form'; // Para gerenciamento de formulários
-import { zodResolver } from '@hookform/resolvers/zod'; // Integrar Zod com React Hook Form
-import { z } from 'zod'; // Para validação de esquema
-import { toast } from 'react-hot-toast'; // Para exibir notificações (toasts)
-import { Eye, EyeOff } from 'lucide-react'; // Ícones de olho para exibir/ocultar senha
-
-// Componentes de UI locais
-import { cn } from '@/lib/utils'; // Função utilitária para mesclar classes CSS
-import { Button } from '@/components/ui/button';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { handleSubmit } from './action';
+import toast from 'react-hot-toast';
 import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@radix-ui/react-label';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Eye, EyeOff } from 'lucide-react';
+
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -24,37 +20,36 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-// --- Ações de API (Server Action) ---
-import { handleSubmit } from './action'; // Server Action para submeter o registro
+export type ParamsProps = {
+  email: string;
+  name: string;
+  userId: string;
+};
 
-// --- Esquema de Validação (Zod) ---
-// Define o esquema de validação para os campos do formulário de registro de servidor.
 const formSchema = z.object({
-  name: z.string().min(2, { message: 'O nome deve ter no mínimo 2 caracteres.' }),
-  identification: z
+  cpf: z
     .string()
-    .min(6, { message: 'A matrícula deve ter no mínimo 6 caracteres.' })
-    .max(8, { message: 'A matrícula deve ter no máximo 8 caracteres.' }),
-  email: z
+    .min(14, { message: 'CPF inválido.' }) // 14 caracteres para 000.000.000-00
+    .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, {
+      message: 'Formato de CPF inválido (Ex: 000.000.000-00).',
+    }),
+  phone: z
     .string()
-    .min(6, { message: 'Seu email deve ter no mínimo 6 caracteres.' })
-    .email({ message: 'Digite um email válido.' }),
+    .min(11, { message: 'Seu telefone deve ter no mínimo 11 caracteres (incluindo DDD).' }),
+  // Pode adicionar regex para (00) 0 0000-0000 ou (00) 0000-0000
+  address: z.string().min(5, { message: 'Seu endereço deve ter no mínimo 5 caracteres.' }),
   password: z.string().min(8, { message: 'Sua senha deve ter no mínimo 8 caracteres.' }),
 });
 
-// --- Tipos de Dados ---
-// Define o tipo inferido do esquema de validação para os dados do formulário.
 type RegisterFormValues = z.infer<typeof formSchema>;
 
-// --- Componente Principal ---
-export function RegisterServerForm({ className, ...props }: React.ComponentProps<'div'>) {
+const RegisterCompleteExternal = (props: ParamsProps & React.ComponentProps<'div'>) => {
+  const { email, name, userId, className, ...rest } = props;
   // --- Estados do Componente ---
-  // `selectedFunction` armazena a função selecionada no dropdown.
-  const [selectedFunction, setSelectedFunction] = useState('');
   // `isSubmitting` controla o estado de carregamento durante a submissão do formulário.
   const [isSubmitting, setIsSubmitting] = useState(false);
   // `showPassword` controla a visibilidade da senha.
-  const [showPassword, setShowPassword] = useState(false); // Adicionado para visibilidade da senha
+  const [showPassword, setShowPassword] = useState(false);
 
   // --- Hooks de Navegação e Formulário ---
   const router = useRouter(); // Instancia o roteador para navegação programática.
@@ -73,23 +68,15 @@ export function RegisterServerForm({ className, ...props }: React.ComponentProps
   async function onSubmit(values: RegisterFormValues) {
     setIsSubmitting(true); // Ativa o estado de carregamento.
 
-    // Validação adicional para `selectedFunction` (campo de seleção).
-    if (!selectedFunction) {
-      toast.error('Por favor, selecione sua função na instituição.');
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
       // Cria um objeto FormData para enviar os dados para a Server Action.
       const formData = new FormData();
-      formData.append('name', values.name);
-      formData.append('identification', values.identification);
-      formData.append('roleInInstitution', selectedFunction); // Adiciona a função selecionada
-      formData.append('email', values.email);
+      formData.append('identification', values.cpf);
       formData.append('password', values.password);
+      formData.append('address', values.address);
+      formData.append('phone', values.phone);
 
-      const result = await handleSubmit(formData); // Chama a Server Action de registro.
+      const result = await handleSubmit(formData, userId, email); // Chama a Server Action de registro.
 
       if (result?.error) {
         toast.error(result.error); // Exibe erro retornado pela Server Action.
@@ -118,7 +105,7 @@ export function RegisterServerForm({ className, ...props }: React.ComponentProps
   return (
     <div
       className={cn('flex flex-col gap-6', className)} // `cn` para mesclar classes CSS condicionalmente.
-      {...props}>
+      {...rest}>
       <Card className="bg-[#264543] border-0 text-white">
         <CardContent>
           <form onSubmit={formHandleSubmit(onSubmit)}>
@@ -132,55 +119,53 @@ export function RegisterServerForm({ className, ...props }: React.ComponentProps
                   className="bg-white text-black"
                   id="name"
                   type="text"
-                  placeholder="Digite seu nome"
-                  required
-                  {...register('name')}
+                  value={name || ''}
+                  readOnly
                 />
-                {/* Exibe erro de validação para o nome. */}
-                {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
               </div>
 
-              {/* Campo de Matrícula */}
+              {/* Campo de CPF */}
               <div className="grid gap-2">
-                <Label htmlFor="identification">Matrícula</Label>
+                <Label htmlFor="cpf">CPF</Label>
                 <Input
                   className="bg-white text-black"
-                  id="identification"
+                  id="cpf"
                   type="text"
-                  placeholder="Digite sua matrícula"
+                  placeholder="000.000.000-00"
                   required
-                  {...register('identification')}
+                  maxLength={14} // Limita a entrada visualmente para o formato.
+                  {...register('cpf')}
                 />
-                {/* Exibe erro de validação para a matrícula. */}
-                {errors.identification && (
-                  <p className="text-red-500 text-sm">{errors.identification.message}</p>
-                )}
+                {/* Exibe erro de validação para o CPF. */}
+                {errors.cpf && <p className="text-red-500 text-sm">{errors.cpf.message}</p>}
               </div>
-
-              {/* Campo de Função (Select) */}
+              {/* Campo de Telefone */}
               <div className="grid gap-2">
-                <Label htmlFor="roleInInstitution">Função</Label>
-                <Select
-                  value={selectedFunction}
-                  onValueChange={(value) => setSelectedFunction(value)}
-                  required>
-                  <SelectTrigger
-                    id="roleInInstitution"
-                    className="w-full bg-white text-black">
-                    <SelectValue placeholder="Selecione sua função que exerce no Instituto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PROFESSOR_EDUCACAO_FISICA">
-                      Professor de Educação Física
-                    </SelectItem>
-                    <SelectItem value="PROFESSOR_OUTROS">Professor</SelectItem>
-                    <SelectItem value="DIRETOR">Diretor</SelectItem>
-                    <SelectItem value="COORDENADOR">Coordenador</SelectItem>
-                    <SelectItem value="OUTRO">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-                {/* Opcional: Adicionar erro de validação para o Select */}
-                {/* {selectedFunction === '' && <p className="text-red-500 text-sm">Por favor, selecione uma função.</p>} */}
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  className="bg-white text-black"
+                  id="phone"
+                  type="text"
+                  placeholder="(00) 0 0000-0000"
+                  required
+                  {...register('phone')}
+                />
+                {/* Exibe erro de validação para o telefone. */}
+                {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
+              </div>
+              {/* Campo de Endereço */}
+              <div className="grid gap-2">
+                <Label htmlFor="address">Endereço</Label>
+                <Input
+                  className="bg-white text-black"
+                  id="address"
+                  type="text"
+                  placeholder="Rua exemplo; Bairro exemplo; n. EX"
+                  required
+                  {...register('address')}
+                />
+                {/* Exibe erro de validação para o endereço. */}
+                {errors.address && <p className="text-red-500 text-sm">{errors.address.message}</p>}
               </div>
 
               {/* Campo de Email */}
@@ -190,12 +175,9 @@ export function RegisterServerForm({ className, ...props }: React.ComponentProps
                   className="bg-white text-black"
                   id="email"
                   type="email"
-                  placeholder="Digite seu email"
-                  required
-                  {...register('email')}
+                  value={email || ''}
+                  readOnly
                 />
-                {/* Exibe erro de validação para o email. */}
-                {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
               </div>
 
               {/* Campo de Senha */}
@@ -252,4 +234,6 @@ export function RegisterServerForm({ className, ...props }: React.ComponentProps
       </Card>
     </div>
   );
-}
+};
+
+export default RegisterCompleteExternal;

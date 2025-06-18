@@ -20,6 +20,8 @@ import { Label } from '@/components/ui/label';
 
 // --- Ações de API (Server Action) ---
 import { handleSubmit } from './action'; // Server Action para submeter os dados de login
+import Image from 'next/image';
+import google from '../../assets/images/google.png';
 
 // --- Interfaces ---
 // Define a estrutura esperada para um token JWT decodificado.
@@ -141,6 +143,19 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
     }
   }
 
+  async function handleLoginGoogle() {
+    try {
+      setLoading(true);
+      // Redireciona para a rota de login do Google no backend
+      window.location.href = `http://localhost:4000/auth/google/login`;
+    } catch (error) {
+      console.error('Erro ao iniciar login com Google:', error);
+      toast.error('Erro ao tentar login com Google');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // Função para redirecionar para a página de recuperação de senha.
   function handleRedirectRestorePass(e: React.MouseEvent) {
     e.preventDefault(); // Previne o comportamento padrão do link.
@@ -230,14 +245,30 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               </div>
 
               {/* Botão de Login */}
-              <div className="flex flex-col gap-3 items-center">
+              <div className="flex gap-3 justify-center">
                 <Button
                   type="submit" // Define como tipo "submit" para submeter o formulário.
-                  className="w-48 bg-[#E3E3E3] text-black cursor-pointer hover:bg-[#d0d0d0]"
+                  className="w-44 bg-[#E3E3E3] text-black cursor-pointer hover:bg-[#d0d0d0]"
                   disabled={loading}>
                   {' '}
                   {/* Desabilita o botão durante o carregamento. */}
                   {loading ? 'Logando...' : 'Login'} {/* Altera texto durante o carregamento. */}
+                </Button>
+
+                <Button
+                  type="button" // Define como tipo "submit" para submeter o formulário.
+                  className="w-44 bg-[#E3E3E3] text-black cursor-pointer hover:bg-[#d0d0d0]"
+                  onClick={handleLoginGoogle}>
+                  {' '}
+                  <Image
+                    src={google.src} // Fonte da imagem do logo.
+                    alt="IFReserve Logo" // Texto alternativo para acessibilidade.
+                    width={20} // Largura original do logo (ajuste conforme necessário).
+                    height={20} // Altura original do logo (ajuste conforme necessário).
+                    className="object-contain" // Garante que a imagem se ajuste sem cortar.
+                    priority // Otimiza o carregamento da imagem, pois é um elemento acima da dobra.
+                  />
+                  Login com google{' '}
                 </Button>
               </div>
             </div>

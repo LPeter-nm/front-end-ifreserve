@@ -265,14 +265,6 @@ export function CalendarEvent({ reserve, color }: ReservesProps) {
               className={disabledInputClass}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Status</label>
-            <Input
-              value={reserve.status || ''}
-              disabled
-              className={disabledInputClass}
-            />
-          </div>
           {reserve.comments && ( // Exibe comentários apenas se existirem.
             <div className="col-span-2">
               <label className="block text-sm font-medium mb-1">Comentários (Admin)</label>

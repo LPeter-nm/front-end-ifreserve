@@ -3,7 +3,7 @@
 // --- Importações de Bibliotecas e Componentes ---
 // Agrupando importações por tipo: bibliotecas externas, depois componentes internos.
 import { ReactNode, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 
@@ -21,6 +21,9 @@ const PrivateLayout = ({ children }: { children: ReactNode }) => {
 
   // --- Hooks de Navegação ---
   const router = useRouter();
+  const queryParams = useSearchParams();
+
+  const tokenParams = queryParams.get('token');
 
   // --- Efeitos Colaterais (useEffect) ---
   // Lógica principal para verificação de autenticação e expiração do token.
@@ -39,8 +42,13 @@ const PrivateLayout = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const storedToken = localStorage.getItem('token');
+      let storedToken = localStorage.getItem('token');
 
+      if (tokenParams) {
+        localStorage.setItem('token', tokenParams);
+        storedToken = tokenParams;
+        router.push('/home');
+      }
       if (!storedToken) {
         // Se não há token, o usuário não está autenticado.
         toast.error('Você não está logado. Por favor, faça login.');
